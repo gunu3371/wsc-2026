@@ -1,0 +1,44 @@
+#!/bin/bash
+set -euo pipefail
+dnf install -y python3-pip
+python3 -m pip install boto3 pymongo
+mkdir -p /opt/skills-nosql
+echo '${client_source}' | base64 -d >/opt/skills-nosql/docdb_client.py
+echo '${dataset}' | base64 -d >/opt/skills-nosql/retail_dataset.json
+curl -fsSL https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o /opt/skills-nosql/global-bundle.pem
+cat >/opt/skills-nosql/bootstrap.py <<'PY'
+import sys, time
+sys.path.insert(0, "/opt/skills-nosql")
+from docdb_client import db, seed_data
+for attempt in range(60):
+    try:
+        database = db()
+        database.orders.create_index([("orderId", 1)], unique=True)
+        database.orders.create_index([("customerId", 1), ("createdAt", -1)])
+        database.orders.create_index([("status", 1), ("dueAt", 1)])
+        database.products.create_index([("productId", 1)], unique=True)
+        database.products.create_index([("warehouseId", 1), ("stock", 1)])
+        database.sessions.create_index([("sessionId", 1)], unique=True)
+        database.sessions.create_index([("expiresAt", 1)], expireAfterSeconds=0)
+        database.sessions.create_index([("customerId", 1), ("lastSeen", -1)])
+        seed_data()
+        break
+    except Exception as exc:
+        print(exc, flush=True)
+        time.sleep(10)
+else:
+    raise RuntimeError("DocumentDB bootstrap did not become ready")
+PY
+python3 /opt/skills-nosql/bootstrap.py
+cat >/etc/systemd/system/skills-nosql-client.service <<'UNIT'
+[Unit]
+After=network-online.target
+[Service]
+WorkingDirectory=/opt/skills-nosql
+ExecStart=/usr/bin/python3 /opt/skills-nosql/docdb_client.py serve
+Restart=always
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now skills-nosql-client

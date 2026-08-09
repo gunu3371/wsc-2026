@@ -1,0 +1,27 @@
+#!/bin/bash
+set -euo pipefail
+dnf install -y java-17-amazon-corretto-headless wget tar
+aws s3 cp s3://${bucket}/bootstrap/app /opt/wsc2026-sensor-producer
+chmod +x /opt/wsc2026-sensor-producer
+mkdir -p /opt/kafka
+wget -qO /tmp/kafka.tgz https://archive.apache.org/dist/kafka/3.6.0/kafka_2.13-3.6.0.tgz
+tar xzf /tmp/kafka.tgz --strip-components=1 -C /opt/kafka
+wget -qO /opt/kafka/libs/aws-msk-iam-auth.jar https://github.com/aws/aws-msk-iam-auth/releases/download/v2.2.0/aws-msk-iam-auth-2.2.0-all.jar
+printf '%s\n' 'security.protocol=SASL_SSL' 'sasl.mechanism=AWS_MSK_IAM' 'sasl.jaas.config=software.amazon.msk.auth.iam.IAMLoginModule required;' 'sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbackHandler' >/opt/kafka/client.properties
+/opt/kafka/bin/kafka-topics.sh --bootstrap-server '${bootstrap}' --command-config /opt/kafka/client.properties --create --if-not-exists --topic wsc2026-sensor-raw --partitions 3 --replication-factor 2
+/opt/kafka/bin/kafka-topics.sh --bootstrap-server '${bootstrap}' --command-config /opt/kafka/client.properties --create --if-not-exists --topic wsc2026-sensor-alert --partitions 1 --replication-factor 2
+cat >/etc/systemd/system/sensor-producer.service <<'UNIT'
+[Unit]
+After=network-online.target
+[Service]
+Environment=BOOTSTRAP_SERVERS=${bootstrap}
+Environment=TOPIC_RAW=wsc2026-sensor-raw
+Environment=AWS_REGION=${region}
+ExecStart=/opt/wsc2026-sensor-producer
+Restart=always
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now sensor-producer
+

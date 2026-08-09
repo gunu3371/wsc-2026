@@ -1,0 +1,42 @@
+resource "keycloak_realm" "aws" { realm = "wsc2026-aws"
+enabled = true }
+resource "keycloak_group" "team" { for_each = toset(["dev-team", "infra-team"])
+realm_id = keycloak_realm.aws.id
+name = each.value }
+resource "keycloak_user" "user" { for_each = { dev = { username = "dev-user", password = var.dev_password, group = "dev-team" }, infra = { username = "infra-user", password = var.infra_password, group = "infra-team" } }
+realm_id = keycloak_realm.aws.id
+username = each.value.username
+enabled = true
+initial_password { value = each.value.password
+temporary = false } }
+resource "keycloak_user_groups" "team" { for_each = keycloak_user.user
+realm_id = keycloak_realm.aws.id
+user_id = each.value.id
+group_ids = [keycloak_group.team[each.value.username == "dev-user" ? "dev-team" : "infra-team"].id] }
+resource "keycloak_saml_client" "aws" { realm_id = keycloak_realm.aws.id
+client_id = "urn:amazon:webservices"
+name = "AWS"
+sign_documents = true
+sign_assertions = true
+client_signature_required = false
+include_authn_statement = true
+force_post_binding = true
+front_channel_logout = true
+valid_redirect_uris = ["https://signin.aws.amazon.com/saml"] }
+resource "keycloak_saml_user_attribute_protocol_mapper" "session" { realm_id = keycloak_realm.aws.id
+client_id = keycloak_saml_client.aws.id
+name = "Session Name"
+user_attribute = "username"
+saml_attribute_name = "https://aws.amazon.com/SAML/Attributes/RoleSessionName"
+saml_attribute_name_format = "Basic" }
+resource "keycloak_saml_hardcode_attribute_protocol_mapper" "session_duration" { realm_id = keycloak_realm.aws.id
+client_id = keycloak_saml_client.aws.id
+name = "Session Duration"
+attribute_name = "https://aws.amazon.com/SAML/Attributes/SessionDuration"
+attribute_value = "3600" }
+resource "keycloak_saml_hardcode_attribute_protocol_mapper" "roles" { for_each = { dev = "${var.dev_role_arn},${var.saml_provider_arn}", infra = "${var.infra_role_arn},${var.saml_provider_arn}" }
+realm_id = keycloak_realm.aws.id
+client_id = keycloak_saml_client.aws.id
+name = "AWS ${each.key} role"
+attribute_name = "https://aws.amazon.com/SAML/Attributes/Role"
+attribute_value = each.value }

@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+dnf install -y python3-pip
+mkdir -p /opt/app
+echo '${app}' | base64 -d > /opt/app/app.py
+echo '${requirements}' | base64 -d > /opt/app/requirements.txt
+pip3 install -r /opt/app/requirements.txt
+cat >/etc/systemd/system/app.service <<'UNIT'
+[Unit]
+After=network-online.target
+[Service]
+WorkingDirectory=/opt/app
+Environment=STREAM_NAME=${stream}
+Environment=AWS_REGION=${region}
+ExecStart=/usr/local/bin/gunicorn --bind 0.0.0.0:5000 app:app
+Restart=always
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now app
+

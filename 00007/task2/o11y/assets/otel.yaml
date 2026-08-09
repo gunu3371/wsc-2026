@@ -1,0 +1,27 @@
+receivers:
+  filelog:
+    include: [/var/log/pods/*/*/*.log]
+    include_file_path: true
+    start_at: end
+    operators:
+      - type: container
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+  k8sattributes:
+    auth_type: serviceAccount
+    filter:
+      node_from_env_var: K8S_NODE_NAME
+    passthrough: false
+  batch:
+    timeout: 1s
+exporters:
+  otlphttp/loki:
+    endpoint: http://o11y-loki.monitoring.svc.cluster.local:3100/otlp
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      processors: [memory_limiter, k8sattributes, batch]
+      exporters: [otlphttp/loki]

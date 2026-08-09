@@ -1,0 +1,21 @@
+#!/bin/bash
+set -euo pipefail
+dnf install -y java-21-amazon-corretto-headless tar gzip
+useradd --system --home-dir /opt/keycloak --shell /sbin/nologin keycloak
+curl -fsSL https://github.com/keycloak/keycloak/releases/download/26.3.2/keycloak-26.3.2.tar.gz -o /tmp/keycloak.tar.gz
+tar xzf /tmp/keycloak.tar.gz -C /opt/keycloak --strip-components=1
+chown -R keycloak:keycloak /opt/keycloak
+cat >/etc/systemd/system/keycloak.service <<'UNIT'
+[Unit]
+After=network-online.target
+[Service]
+User=keycloak
+Environment=KC_BOOTSTRAP_ADMIN_USERNAME=admin
+Environment=KC_BOOTSTRAP_ADMIN_PASSWORD=${password}
+ExecStart=/opt/keycloak/bin/kc.sh start --http-enabled=true --hostname-strict=false --proxy-headers=xforwarded --health-enabled=true
+Restart=always
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now keycloak

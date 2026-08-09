@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+mkdir -p /opt/skills-lattice
+echo '${client_app}' | base64 -d >/opt/skills-lattice/client_app.py
+cat >/etc/systemd/system/skills-lattice-client.service <<'UNIT'
+[Unit]
+After=network-online.target
+[Service]
+Environment=SERVICE_URL=${service_url}
+ExecStart=/usr/bin/python3 /opt/skills-lattice/client_app.py
+Restart=always
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable --now skills-lattice-client

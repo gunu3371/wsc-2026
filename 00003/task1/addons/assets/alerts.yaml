@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: wsc2026-alerts
+  namespace: observability
+spec:
+  groups:
+    - name: wsc2026
+      rules:
+        - { alert: PodHighCPU, expr: 'sum(rate(container_cpu_usage_seconds_total{namespace="wsc2026",container!=""}[5m])) by (pod) / sum(kube_pod_container_resource_limits{namespace="wsc2026",resource="cpu"}) by (pod) > 0.8', for: 3m }
+        - { alert: PodHighMemory, expr: 'sum(container_memory_working_set_bytes{namespace="wsc2026",container!=""}) by (pod) / sum(kube_pod_container_resource_limits{namespace="wsc2026",resource="memory"}) by (pod) > 0.9', for: 3m }
+        - { alert: PodNotReady, expr: 'kube_pod_status_ready{namespace="wsc2026",condition="true"} == 0', for: 3m }
+        - { alert: PodCrashLooping, expr: 'increase(kube_pod_container_status_restarts_total{namespace="wsc2026"}[3m]) > 3', for: 3m }
+        - { alert: HighErrorRate, expr: 'sum(rate(http_requests_total{namespace="wsc2026",status=~"4..|5.."}[1m])) / sum(rate(http_requests_total{namespace="wsc2026"}[1m])) > 0.05', for: 1m }
+        - { alert: HighLatency, expr: 'rate(http_request_duration_seconds_sum{namespace="wsc2026"}[1m]) / rate(http_request_duration_seconds_count{namespace="wsc2026"}[1m]) > 3', for: 1m }

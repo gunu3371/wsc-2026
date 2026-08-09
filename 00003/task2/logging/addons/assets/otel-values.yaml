@@ -1,0 +1,52 @@
+mode: deployment
+replicaCount: 1
+image:
+  repository: otel/opentelemetry-collector-contrib
+config:
+  receivers:
+    otlp:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4318
+  processors:
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 400
+    resource:
+      attributes:
+        - key: cluster
+          value: wsc2026-logging-cluster
+          action: upsert
+    transform:
+      log_statements:
+        - context: log
+          statements:
+            - merge_maps(attributes, ParseJSON(body), "upsert") where IsString(body)
+    batch: {}
+  connectors:
+    count:
+      log_record_count:
+        description: Log records grouped by level
+        attributes:
+          - key: level
+  exporters:
+    otlphttp/loki:
+      endpoint: http://wsc2026-loki.wsc2026-logging.svc.cluster.local:3100/otlp
+    prometheus:
+      endpoint: 0.0.0.0:8889
+  service:
+    pipelines:
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, resource, transform, batch]
+        exporters: [otlphttp/loki, count]
+      metrics:
+        receivers: [count]
+        processors: [batch]
+        exporters: [prometheus]
+ports:
+  metrics:
+    enabled: true
+    containerPort: 8889
+    servicePort: 8889
+    protocol: TCP
