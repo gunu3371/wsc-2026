@@ -1,16 +1,32 @@
-variable "candidate_id" { type = string }
-variable "aws_profile" { type = string
-default = null }
-variable "allowed_cidr" { type = string
-default = "0.0.0.0/0" }
-variable "cluster_version" { type = string
-default = "1.35" }
-variable "lambda_runtime" { type = string
-default = "python3.14" }
-variable "tags" { type = map(string)
-default = {} }
-variable "book_image_uri" { type = string
-default = "nginx:1.27-alpine" }
-variable "grafana_admin_password" { type = string
-default = "$korea26!!"
-sensitive = true }
+variable "candidate_id" {
+  type = string
+}
+variable "aws_profile" {
+  type    = string
+  default = null
+}
+variable "allowed_cidr" {
+  type    = string
+  default = "0.0.0.0/0"
+}
+variable "cluster_version" {
+  type    = string
+  default = "1.35"
+}
+variable "lambda_runtime" {
+  type    = string
+  default = "python3.14"
+}
+variable "tags" {
+  type    = map(string)
+  default = {}
+}
+variable "book_image_uri" {
+  type    = string
+  default = "nginx:1.27-alpine"
+}
+variable "grafana_admin_password" {
+  type      = string
+  default   = "$korea26!!"
+  sensitive = true
+}

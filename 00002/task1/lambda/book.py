@@ -2,7 +2,7 @@ import json, os
 from datetime import datetime, timezone, timedelta
 import boto3
 table=boto3.resource("dynamodb").Table(os.environ["TABLE_NAME"])
-def response(code,body): return {"statusCode":code,"statusDescription":f"{code}","isBase64Encoded":False,"headers":{"Content-Type":"application/json; charset=utf-8"},"body":json.dumps(body,ensure_ascii=False)}
+def response(code,body): return {"statusCode":code,"isBase64Encoded":False,"headers":{"Content-Type":"application/json; charset=utf-8"},"body":json.dumps(body,ensure_ascii=False)}
 def handler(event, context):
     method=event.get("httpMethod","")
     if method=="POST":

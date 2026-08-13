@@ -22,3 +22,16 @@ def role_handler(event,context):
 def type_handler(event,context):
     instance=os.environ["INSTANCE_ID"]; ec2.stop_instances(InstanceIds=[instance]); ec2.get_waiter("instance_stopped").wait(InstanceIds=[instance]); ec2.modify_instance_attribute(InstanceId=instance,InstanceType={"Value":os.environ["INSTANCE_TYPE"]}); ec2.start_instances(InstanceIds=[instance]); alert("EC2_TYPE_CHANGED",f"Instance type restored on {instance}","RESTORED")
 
+HANDLERS = {
+    "wsc2026-ec2-stop-remediation": stop_handler,
+    "wsc2026-ec2-terminate-alert": terminate_handler,
+    "wsc2026-sg-remediation": sg_handler,
+    "wsc2026-tag-alert": tag_handler,
+    "wsc2026-role-remediation": role_handler,
+    "wsc2026-ec2-type-remediation": type_handler,
+}
+
+def handler(event, context):
+    """Use the assignment's common index.handler for every named function."""
+    return HANDLERS[context.function_name](event, context)
+
