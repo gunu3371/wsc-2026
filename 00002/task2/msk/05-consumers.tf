@@ -15,7 +15,7 @@ data "archive_file" "alert_consumer" {
   output_path = "${path.module}/alert-consumer.zip"
 }
 resource "aws_iam_role" "lambda" {
-  name = "wsc2026-sensor-lambda-role"
+  name = "wsc2026-msk-lambda-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Principal = {

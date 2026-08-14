@@ -4,7 +4,7 @@ variable "aws_profile" {
 }
 variable "availability_zones" {
   type    = list(string)
-  default = ["ap-northeast-2a", "ap-northeast-2c"]
+  default = ["ap-northeast-2a", "ap-northeast-2b"]
 }
 variable "allowed_cidr" {
   type    = string

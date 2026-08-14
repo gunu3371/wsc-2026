@@ -58,6 +58,8 @@ resource "aws_config_config_rule" "tags" {
     owner             = "AWS"
     source_identifier = "REQUIRED_TAGS"
   }
+  scope {
+    compliance_resource_types = ["AWS::EC2::Instance"]
+  }
   depends_on = [aws_config_configuration_recorder.this]
 }
-

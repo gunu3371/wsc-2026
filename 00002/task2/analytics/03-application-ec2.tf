@@ -1,5 +1,5 @@
 resource "aws_iam_role" "ec2" {
-  name = "wsc2026-analytics-ec2-role"
+  name = "wsc2026-alaytics-ec2-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Principal = {
@@ -40,4 +40,3 @@ resource "aws_instance" "app" {
     Name = "wsc2026-analytics-ec2"
   }
 }
-

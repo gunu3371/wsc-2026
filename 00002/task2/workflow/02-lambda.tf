@@ -42,6 +42,7 @@ resource "aws_lambda_function" "processor" {
   handler          = "index.handler"
   filename         = data.archive_file.processor.output_path
   source_code_hash = data.archive_file.processor.output_base64sha256
+  timeout          = 30
   environment {
     variables = {
       S3_BUCKET = aws_s3_bucket.this.id, DDB_TABLE = aws_dynamodb_table.this.name
@@ -55,10 +56,10 @@ resource "aws_lambda_function" "trigger" {
   handler          = "trigger.handler"
   filename         = data.archive_file.trigger.output_path
   source_code_hash = data.archive_file.trigger.output_base64sha256
+  timeout          = 30
   environment {
     variables = {
       STATE_MACHINE_ARN = aws_sfn_state_machine.this.arn
     }
   }
 }
-

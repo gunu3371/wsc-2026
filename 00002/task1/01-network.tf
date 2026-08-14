@@ -8,7 +8,7 @@ resource "aws_vpc" "main" {
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
   tags = merge(var.tags, {
-    Name = "wskorea26-igw"
+    Name = "book-igw"
   })
 }
 resource "aws_subnet" "public" {
@@ -40,7 +40,7 @@ resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
   tags = merge(var.tags, {
-    Name = "wskorea26-nat-${count.index == 0 ? "c" : "d"}"
+    Name = "book-ngw-${count.index == 0 ? "c" : "d"}"
   })
 }
 resource "aws_route_table" "public" {
@@ -78,10 +78,11 @@ resource "aws_security_group" "environment" {
   name   = "wskorea26-vpc-environment-sg"
   vpc_id = aws_vpc.main.id
   ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.allowed_cidr]
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    self        = true
+    description = "EKS private endpoint access from the CloudShell VPC environment"
   }
   egress {
     from_port   = 0
@@ -91,4 +92,3 @@ resource "aws_security_group" "environment" {
   }
   tags = var.tags
 }
-

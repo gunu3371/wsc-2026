@@ -1,200 +1,117 @@
-# 00002 Terraform 구현
+# 응시번호 00002 Terraform 구현
 
-`37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002`의 1·2과제를 Terraform으로 구현한 디렉터리다. 문제지와 채점 스크립트에 명시된 리전, 리소스 이름, CIDR, 런타임 및 네트워크 경로를 기준으로 구성한다.
+제61회 전국기능경기대회 클라우드컴퓨팅 00002의 1과제와 2과제를 Terraform으로 구현한다. 같은 디렉터리의 모든 `.tf` 파일은 하나의 root module과 state로 함께 평가된다.
 
-## Terraform 파일 구성 방식
+## 기준 자료
 
-각 root module의 리소스를 과제 단계별 `.tf` 파일로 분리했다. Terraform은 현재 디렉터리의 모든 `.tf` 파일을 한 모듈로 함께 읽으므로 단계 파일을 개별 실행하지 않는다. 해당 디렉터리에서 한 번의 `terraform plan` 또는 `terraform apply`로 전체 단계를 적용한다.
+- `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/00_최종본_안내.txt`
+- `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/01_최종제출본/제61회전국기능경기대회_vf/1과제/과제지&배포파일/1과제_문제.pdf`
+- `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/01_최종제출본/제61회전국기능경기대회_vf/1과제/채점기준표&채점스크립트/1과제_채점기준.pdf`
+- `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/01_최종제출본/제61회전국기능경기대회_vf/1과제/채점기준표&채점스크립트/채점스크립트/mark.sh`
+- 같은 최종제출본의 `2과제/과제지&배포파일/2과제_문제.pdf`, `2과제/채점기준표&채점스크립트/2과제_채점기준.pdf`, `mark2-1.sh`부터 `mark2-4.sh`
+- `docs/2026-07-31 직종협의회.md`는 운영 참고사항으로만 사용한다.
 
-각 디렉터리는 독립적인 state를 사용한다.
+요구사항 대조표는 `REQUIREMENTS.md`, 원본 간 충돌은 `ERROR_CANDIDATES.md`에 기록했다. 공식 PDF와 채점 스크립트는 수정하지 않았다.
+
+## 디렉터리와 state 경계
 
 ```text
 00002/
-├── task1/                       # 1과제 AWS 기반시설
-│   ├── 00-common.tf
-│   ├── 01-network.tf
-│   ├── 02-static-storage.tf
-│   ├── 03-container-registry.tf
-│   ├── 04-database.tf
-│   ├── 05-eks.tf
-│   ├── 06-lambda.tf
-│   ├── 07-application-load-balancer.tf
-│   ├── 08-cloudfront.tf
-│   ├── 09-application-api.tf
-│   ├── 10-monitoring.tf
-│   └── platform/                # EKS 내부 Kubernetes/Helm 리소스
-│       ├── 01-application.tf
-│       └── 02-monitoring.tf
+├── task1/                       # 1과제 AWS 기반 root/state
+│   ├── 00-common.tf ~ 10-monitoring.tf
+│   └── platform/               # EKS Kubernetes/Helm root/state
 └── task2/
-    ├── workflow/                # ap-southeast-1
-    ├── analytics/               # ap-northeast-2
-    ├── cloud-event/             # eu-west-1
-    └── msk/                     # ap-northeast-1
+    ├── workflow/               # ap-southeast-1, 독립 root/state
+    ├── analytics/              # ap-northeast-2, 독립 root/state
+    ├── cloud-event/            # eu-west-1, 독립 root/state
+    └── msk/                    # ap-northeast-1, 독립 root/state
 ```
 
-`versions.tf`, `variables.tf`, `outputs.tf`는 각 모듈의 공급자·입력·출력을 선언한다. 런타임 코드는 `lambda/`, 배포 자료는 `assets/`, EC2 초기화 스크립트는 `user_data.sh.tftpl`에 있다.
+1과제는 `task1 → task1/platform` 순으로 적용한다. `platform`은 기반 output만 읽으며 EKS 워크로드와 모니터링을 소유한다. 2과제 네 모듈은 리전과 수명주기가 달라 서로 state를 공유하지 않으며 독립적으로 plan/apply/destroy할 수 있다. 이미 적용된 state 주소를 불필요하게 이동하지 않기 위해 현재 두 root 경계를 유지했다.
 
-## 1과제: Web Service Provisioning
+## 주요 고정값
 
-기본 리전은 `ap-northeast-2`다.
+| 범위 | 리전 | 네트워크 | 주요 이름 |
+|---|---|---|---|
+| 1과제 | ap-northeast-2 | 172.16.0.0/16, public 172.16.1/24·2/24, private 172.16.201/24·202/24 | `wskorea26-cluster`, `wskorea26-book-repo`, `wskorea26-data-table` |
+| Workflow | ap-southeast-1 | 해당 없음 | `wsc2026-student-score-workflow`, `wsc2026-student-score` |
+| Analytics | ap-northeast-2 | 10.20.0.0/16, public 0/24·1/24, private 100/24·101/24 | `wsc2026-analytics-ec2`, `wsc2026-order-stream` |
+| Cloud Event | eu-west-1 | 172.16.0.0/16, public 0/24·1/24 | `wsc2026-event-ec2`, `wsc2026-event-trail` |
+| MSK | ap-northeast-1 | 192.168.0.0/16, public 0/24·1/24, private 10/24·11/24 | `wsc2026-msk-cluster`, `wsc2026-sensor-data` |
 
-| 단계 | 파일 | 구현 내용 |
-|---|---|---|
-| 공통 | `00-common.tf` | 계정·가용 영역 data source와 공통 local 값 |
-| 1 | `01-network.tf` | `172.16.0.0/16` VPC, public/private subnet, IGW, AZ별 NAT와 route table, 환경 SG |
-| 2 | `02-static-storage.tf` | KMS 암호화 S3, public access 차단, `web/main/` 정적 객체, CloudFront 복호화 정책 |
-| 3 | `03-container-registry.tf` | 스캔과 암호화를 적용한 `wskorea26-book-repo` ECR |
-| 4 | `04-database.tf` | KMS 암호화 및 삭제 방지를 적용한 `wskorea26-data-table` DynamoDB |
-| 5 | `05-eks.tf` | private EKS, control-plane log, secrets KMS, addon/app node group와 taint·label |
-| 6 | `06-lambda.tf` | DynamoDB를 사용하는 `wskorea26-book-lambda`와 IAM |
-| 7 | `07-application-load-balancer.tf` | `/book` Lambda target, 검증 header 규칙, 기본 403 응답 ALB |
-| 8 | `08-cloudfront.tf` | S3 OAC 기본 origin, `/book*` ALB behavior, HTTP→HTTPS |
-| 9 | `09-application-api.tf` | POST/GET 기능시험 단계 설명. 인프라는 4·6·7·8단계에서 선언 |
-| 10 | `10-monitoring.tf` | Grafana ALB, target group, EKS NodePort 접근 규칙 |
+전역 고유 S3 버킷에는 `candidate_id` 또는 계정 기반 suffix를 붙인다. 공통 태그는 `Project`, `CandidateId`, `ManagedBy=Terraform`이다.
 
-EKS API endpoint는 private이다. 따라서 다음 리소스는 별도 state인 `task1/platform`에서 VPC 내부 관리 호스트 또는 연결된 네트워크를 통해 적용한다.
+## 사전 준비
 
-- `01-application.tf`: `wskorea26` namespace, book Deployment와 Service
-- `02-monitoring.tf`: kube-prometheus-stack, Grafana와 `wskorea26-monitoring` dashboard
+- Terraform 1.8 이상
+- AWS CLI v2와 대상 계정 자격 증명
+- 1과제 이미지 빌드용 Docker와 Bash
+- EKS 작업 및 채점용 `kubectl`, Helm, `jq`
+- MSK는 공식 배포 바이너리 `task2/msk/assets/app`을 그대로 사용한다.
 
-### 1과제 적용 순서
+실행 전에 `aws sts get-caller-identity`로 계정을 확인한다. 실제 `terraform.tfvars`, state, plan, `.terraform/`, 생성 ZIP과 자격 증명은 커밋하지 않는다.
 
-```bash
-cd 00002/task1
-cp terraform.tfvars.example terraform.tfvars
-terraform init
+## 변수
+
+- `candidate_id`: 기본 예시는 `00002`; S3 버킷과 Grafana 사용자명에 사용한다.
+- `aws_profile`: 선택적 AWS CLI profile이다.
+- `availability_zones`: 문제지의 AZ suffix와 일치하는 두 AZ다.
+- `allowed_cidr`: Analytics ALB 접근 CIDR이다. 운영 시 필요한 범위로 축소한다.
+- `book_image_uri`: 1과제 ECR의 `stable` 이미지 URI다.
+- `producer_binary_path`: MSK 공식 producer 바이너리 경로다.
+
+필요한 모듈에서 `terraform.tfvars.example`을 `terraform.tfvars`로 복사하고 실제 값만 수정한다.
+
+## 검증과 적용 순서
+
+각 root module에서 다음을 실행한다.
+
+```powershell
 terraform fmt -check
+terraform init -input=false
 terraform validate
-terraform plan -var-file=terraform.tfvars
-terraform apply -var-file=terraform.tfvars
+terraform plan -input=false -var-file=terraform.tfvars
+```
 
-# ECR 생성 후 book:stable 이미지 빌드 및 푸시
-./push-image.sh
+변수 파일이 필요 없는 `analytics`, `cloud-event`는 마지막 옵션을 생략할 수 있다. 적용은 검증 성공 후 사용자가 명시적으로 허용한 경우에만 같은 인수로 `terraform apply`를 실행한다.
 
-# VPC 내부 관리 환경에서 실행
-cd platform
-cp terraform.tfvars.example terraform.tfvars
-# book_image_uri를 실제 ECR URI로 변경
-terraform init
-terraform validate
+1과제 적용 순서는 다음과 같다.
+
+```powershell
+Set-Location 00002/task1
+Copy-Item terraform.tfvars.example terraform.tfvars
+terraform init -input=false
 terraform apply -var-file=terraform.tfvars
 ```
 
-## 2과제: Small Challenge
+ECR 생성 후 Git Bash 또는 WSL에서 `./push-image.sh`로 공식 `book` 바이너리 이미지를 `stable` 태그로 push한다. 이어 `task1/platform/terraform.tfvars`의 `book_image_uri`를 실제 ECR URI로 설정하고, EKS private endpoint에 접근할 수 있는 CloudShell VPC 환경에서 platform을 적용한다.
 
-네 모듈은 리전과 생명주기가 다르며 서로 state를 공유하지 않는다.
+2과제는 `workflow`, `analytics`, `cloud-event`, `msk`를 각각 해당 디렉터리에서 독립 실행한다. Workflow의 샘플 CSV 업로드와 MSK producer 설치는 해당 root apply에 포함된다.
 
-### A. Workflow (`task2/workflow`, `ap-southeast-1`)
+## 채점
 
-| 단계 | 파일 | 구현 내용 |
-|---|---|---|
-| 1 | `01-storage.tf` | S3의 `input/`, `processed/`, `error/`와 DynamoDB 복합 키 |
-| 2 | `02-lambda.tf` | CSV 처리·S3 트리거 Lambda와 IAM |
-| 3 | `03-step-functions.tf` | Standard Step Functions와 처리 성공/실패 분기 |
-| 4 | `04-s3-trigger.tf` | S3 notification과 과제 원본 `input/test.csv` 업로드 |
-
-최초 apply 시 원본 CSV가 업로드되어 workflow가 자동 실행된다. 재시험 전에는 DynamoDB 및 `processed/`, `error/`를 정리하고 `input/test.csv`를 다시 업로드한다.
-
-### B. Analytics (`task2/analytics`, `ap-northeast-2`)
-
-| 단계 | 파일 | 구현 내용 |
-|---|---|---|
-| 1 | `01-network.tf` | `10.20.0.0/16` VPC, public/private subnet, NAT와 SG |
-| 2 | `02-kinesis.tf` | on-demand `wsc2026-order-stream` |
-| 3 | `03-application-ec2.tf` | private EC2, SSM, Kinesis 권한, Flask/Gunicorn systemd 서비스 |
-| 4 | `04-load-balancer.tf` | public ALB, target group와 `/health` 검사 |
-| 5 | `05-flink.tf` | Managed Flink Studio Interactive 애플리케이션과 실행 역할 (`ZEPPELIN-FLINK-3_0`) |
-
-Analytics는 필수 사용자 변수가 없다. 필요하면 `aws_profile`, `allowed_cidr`, `availability_zones`, `tags`를 CLI 또는 별도 `terraform.tfvars`로 지정한다.
-
-AWS는 `INTERACTIVE` 애플리케이션에 `FLINK-1_19`를 허용하지 않는다. Studio Notebook을 실제 생성할 수 있도록 Zeppelin 계열 런타임인 `ZEPPELIN-FLINK-3_0`을 사용하며, 기본 Glue Data Catalog 데이터베이스도 함께 생성한다.
-
-### C. Cloud Event (`task2/cloud-event`, `eu-west-1`)
-
-| 단계 | 파일 | 구현 내용 |
-|---|---|---|
-| 공통 | `00-common.tf` | 계정 data source와 audit bucket suffix |
-| 1 | `01-network-ec2.tf` | `event-vpc`, public EC2, 대상 SG와 instance profile |
-| 2 | `02-alerting-audit.tf` | SNS, audit S3와 management event CloudTrail |
-| 3 | `03-lambda.tf` | 정책 위반 복구·알림 Lambda와 IAM |
-| 4 | `04-eventbridge.tf` | EC2·CloudTrail·Config 이벤트 규칙, target와 호출 권한 |
-| 5 | `05-config.tf` | AWS Config recorder, delivery channel와 관리형 규칙 |
-
-Cloud Event도 필수 사용자 변수가 없다. 기본값을 바꿀 때만 `aws_profile`, `availability_zones`, `tags`를 지정한다.
-
-### D. MSK (`task2/msk`, `ap-northeast-1`)
-
-| 단계 | 파일 | 구현 내용 |
-|---|---|---|
-| 공통 | `00-common.tf` | 계정 data source, CIDR·AZ·bucket local 값 |
-| 1 | `01-network.tf` | `192.168.0.0/16` VPC, public/private subnet, NAT와 SG |
-| 2 | `02-msk-cluster.tf` | Kafka 3.6.0, `kafka.t3.small`, IAM 인증 MSK와 broker log |
-| 3 | `03-destinations.tf` | 센서 DynamoDB, alert S3, producer 바이너리와 SNS |
-| 4 | `04-producer.tf` | private producer EC2, IAM, topic 생성과 systemd 실행. 제공 바이너리 출력을 IAM/TLS Kafka CLI로 전달하는 래퍼 포함 |
-| 5 | `05-consumers.tf` | raw/alert Lambda consumer와 MSK event source mapping |
-
-Producer user data가 IAM 인증 Kafka CLI로 다음 토픽을 만든다.
-
-- `wsc2026-sensor-raw`: partition 3, replication factor 2
-- `wsc2026-sensor-alert`: partition 1, replication factor 2
-
-### 2과제 적용
-
-각 디렉터리에서 독립적으로 실행한다.
+채점 스크립트는 원본 위치에서 수정하지 않고 AWS CloudShell에서 실행한다. 계정과 리전을 먼저 확인하고, 1과제는 private subnet `wskorea26-priv-subnet-d`와 `wskorea26-vpc-environment-sg`를 사용하는 CloudShell VPC 환경에서 EKS 접근을 확인한다.
 
 ```bash
-cd 00002/task2/workflow
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform validate
-terraform apply -var-file=terraform.tfvars
-
-cd ../analytics
-terraform init
-terraform validate
-terraform apply
-
-cd ../cloud-event
-terraform init
-terraform validate
-terraform apply
-
-cd ../msk
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform validate
-terraform apply -var-file=terraform.tfvars
+aws sts get-caller-identity
+aws eks update-kubeconfig --region ap-northeast-2 --name wskorea26-cluster
+kubectl get nodes
+bash mark.sh
 ```
 
-## 입력값 관리
+2과제는 각 `mark2-1.sh`부터 `mark2-4.sh`를 스크립트가 지정한 리전에서 실행한다. 스크립트는 EC2 중지와 SG 규칙 추가 같은 상태 변경을 수행하므로 내용을 검토한 뒤 실제 채점 시에만 실행한다.
 
-- `candidate_id`: 비번호. S3 bucket 이름에 사용되므로 실제 비번호로 변경한다.
-- `aws_profile`: AWS CLI profile을 사용할 때만 지정한다.
-- `allowed_cidr`: 외부에서 ALB 또는 환경 SG에 접근할 CIDR이다.
-- `availability_zones`: 문제지에서 요구한 AZ를 변경해야 할 때만 지정한다.
-- `book_image_uri`: ECR에 푸시한 `wskorea26-book-repo:stable` URI다.
-- `producer_binary_path`: MSK producer 바이너리 경로이며 기본 예시는 `./assets/app`이다.
+## Destroy 순서
 
-실제 `terraform.tfvars`, state, plan, ZIP 산출물과 비밀번호는 저장소에 커밋하지 않는다.
+1과제는 외부 ALB를 만드는 Kubernetes/Helm 리소스를 먼저 제거한 뒤 기반을 제거한다.
 
-## 검증
-
-모든 root module에서 다음 검사를 수행한다.
-
-```bash
-terraform fmt -check
-terraform init
-terraform validate
-terraform plan
+```powershell
+Set-Location 00002/task1/platform
+terraform destroy -var-file=terraform.tfvars
+Set-Location ..
+terraform destroy -var-file=terraform.tfvars
 ```
 
-배포 후에는 함께 제공된 채점 스크립트로 고정 리소스 이름, 리전, 암호화, runtime과 기능 동작을 확인한다. 추가로 다음 항목을 직접 점검한다.
+2과제는 producer와 이벤트 생산을 먼저 중지하고 `msk`, `cloud-event`, `analytics`, `workflow`를 각 root에서 독립 destroy한다. S3는 해당 과제 버킷만 비우며, CloudTrail과 producer가 더 이상 쓰지 않는지 먼저 확인한다. KMS 키는 즉시 삭제되지 않고 AWS가 허용하는 대기 기간 뒤 삭제된다.
 
-- CloudFront 정적 페이지와 `/book` POST/GET
-- EKS node의 `node-type` label과 Pod 배치
-- Workflow 실행 후 DynamoDB 5건 및 오류 JSON 4건
-- Analytics `/health`, `/order`와 systemd 활성 상태
-- Cloud Event의 EC2·SG 자동 복구와 SNS 알림
-- MSK producer 실행, event source mapping 및 DynamoDB/S3 결과
-
-Terraform 1.15.8에서 여섯 개 root module 모두 `terraform init`과 `terraform validate`를 통과했으며, 전체 `.tf` 파일에 `terraform fmt`를 적용했다.
+마지막으로 각 state의 관리 리소스 수가 0인지 확인하고, 해당 리전의 EC2/VPC/ENI/ELB/EKS/MSK/Lambda/DynamoDB/S3/CloudTrail/EventBridge/Config/SNS/CloudWatch/IAM/KMS를 이름과 태그로 교차 확인한다.

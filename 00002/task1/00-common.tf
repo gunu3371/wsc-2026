@@ -1,9 +1,5 @@
 data "aws_caller_identity" "current" {}
-data "aws_availability_zones" "available" {
-  state = "available"
-}
 locals {
-  azs    = slice(data.aws_availability_zones.available.names, 0, 2)
+  azs    = var.availability_zones
   bucket = "wskorea26-concert-bucket-${var.candidate_id}"
 }
-

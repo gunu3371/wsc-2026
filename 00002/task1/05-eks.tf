@@ -16,9 +16,10 @@ resource "aws_iam_role_policy_attachment" "eks" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 resource "aws_kms_key" "eks" {
-  description         = "wskorea26 EKS secrets"
-  enable_key_rotation = true
-  policy              = data.aws_iam_policy_document.kms.json
+  description             = "wskorea26 EKS secrets"
+  enable_key_rotation     = true
+  deletion_window_in_days = 7
+  policy                  = data.aws_iam_policy_document.kms.json
 }
 resource "aws_kms_alias" "eks" {
   name          = "alias/wskorea26-eks-key"
@@ -61,6 +62,24 @@ resource "aws_iam_role_policy_attachment" "nodes" {
   role       = aws_iam_role.nodes.name
   policy_arn = "arn:aws:iam::aws:policy/${each.value}"
 }
+resource "aws_iam_role_policy" "nodes_book_data" {
+  role = aws_iam_role.nodes.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem"]
+        Resource = aws_dynamodb_table.book.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey"]
+        Resource = aws_kms_key.ddb.arn
+      }
+    ]
+  })
+}
 resource "aws_eks_node_group" "node" {
   for_each = {
     addon = "wskorea26-addon-ng", app = "wskorea26-app-ng"
@@ -84,7 +103,7 @@ resource "aws_eks_node_group" "node" {
     max_size     = 3
   }
   tags = merge(var.tags, {
-    Name = each.value
+    Name = "wskorea26-${each.key}-node"
   })
   depends_on = [aws_iam_role_policy_attachment.nodes]
 }
@@ -102,4 +121,3 @@ resource "aws_eks_addon" "coredns" {
   resolve_conflicts_on_update = "OVERWRITE"
   depends_on                  = [aws_eks_node_group.node]
 }
-

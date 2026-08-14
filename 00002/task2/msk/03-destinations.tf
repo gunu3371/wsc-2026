@@ -13,7 +13,8 @@ resource "aws_dynamodb_table" "data" {
   }
 }
 resource "aws_s3_bucket" "alert" {
-  bucket = local.bucket
+  bucket        = local.bucket
+  force_destroy = true
 }
 resource "aws_s3_bucket_public_access_block" "alert" {
   bucket                  = aws_s3_bucket.alert.id

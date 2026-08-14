@@ -13,7 +13,7 @@ provider "aws" {
   region  = "ap-northeast-2"
   profile = var.aws_profile
   default_tags {
-    tags = var.tags
+    tags = merge(var.tags, { CandidateId = "00002" })
   }
 }
 

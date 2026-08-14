@@ -1,7 +1,8 @@
 resource "aws_kms_key" "ddb" {
-  description         = "wskorea26 DynamoDB"
-  enable_key_rotation = true
-  policy              = data.aws_iam_policy_document.kms.json
+  description             = "wskorea26 DynamoDB"
+  enable_key_rotation     = true
+  deletion_window_in_days = 7
+  policy                  = data.aws_iam_policy_document.kms.json
 }
 resource "aws_kms_alias" "ddb" {
   name          = "alias/wskorea26-dynamodb-key"
@@ -21,4 +22,3 @@ resource "aws_dynamodb_table" "book" {
   }
   deletion_protection_enabled = true
 }
-

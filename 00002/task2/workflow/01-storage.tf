@@ -2,7 +2,8 @@ locals {
   bucket = "wsc2026-student-score-bucket-${var.candidate_id}"
 }
 resource "aws_s3_bucket" "this" {
-  bucket = local.bucket
+  bucket        = local.bucket
+  force_destroy = true
 }
 resource "aws_s3_bucket_public_access_block" "this" {
   bucket                  = aws_s3_bucket.this.id
@@ -31,4 +32,3 @@ resource "aws_dynamodb_table" "this" {
     type = "S"
   }
 }
-

@@ -35,9 +35,10 @@ data "aws_iam_policy_document" "kms_s3" {
   }
 }
 resource "aws_kms_key" "s3" {
-  description         = "wskorea26 S3"
-  enable_key_rotation = true
-  policy              = data.aws_iam_policy_document.kms_s3.json
+  description             = "wskorea26 S3"
+  enable_key_rotation     = true
+  deletion_window_in_days = 7
+  policy                  = data.aws_iam_policy_document.kms_s3.json
 }
 resource "aws_kms_alias" "s3" {
   name          = "alias/wskorea26-s3-key"

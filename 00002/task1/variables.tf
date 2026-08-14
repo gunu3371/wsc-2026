@@ -5,9 +5,14 @@ variable "aws_profile" {
   type    = string
   default = null
 }
-variable "allowed_cidr" {
-  type    = string
-  default = "0.0.0.0/0"
+variable "availability_zones" {
+  type    = list(string)
+  default = ["ap-northeast-2c", "ap-northeast-2d"]
+
+  validation {
+    condition     = length(var.availability_zones) == 2
+    error_message = "availability_zones must contain exactly two zones."
+  }
 }
 variable "cluster_version" {
   type    = string

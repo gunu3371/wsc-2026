@@ -18,6 +18,7 @@ After=network-online.target
 [Service]
 Environment=BOOTSTRAP_SERVERS=${bootstrap}
 Environment=TOPIC_RAW=wsc2026-sensor-raw
+Environment=TOPIC_ALERT=wsc2026-sensor-alert
 Environment=AWS_REGION=${region}
 ExecStart=/usr/local/bin/wsc2026-sensor-producer
 Restart=always

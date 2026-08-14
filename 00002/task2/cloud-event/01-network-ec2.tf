@@ -1,5 +1,5 @@
 resource "aws_vpc" "this" {
-  cidr_block           = "10.30.0.0/16"
+  cidr_block           = "172.16.0.0/16"
   enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
@@ -8,15 +8,18 @@ resource "aws_vpc" "this" {
 }
 resource "aws_internet_gateway" "this" {
   vpc_id = aws_vpc.this.id
+  tags = {
+    Name = "event-igw"
+  }
 }
 resource "aws_subnet" "public" {
   count                   = 2
   vpc_id                  = aws_vpc.this.id
-  cidr_block              = "10.30.${count.index + 1}.0/24"
+  cidr_block              = "172.16.${count.index}.0/24"
   availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = true
   tags = {
-    Name = "wsc2026-event-public-${count.index + 1}"
+    Name = "event-pub-${count.index == 0 ? "a" : "b"}"
   }
 }
 resource "aws_route_table" "public" {
@@ -24,6 +27,9 @@ resource "aws_route_table" "public" {
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.this.id
+  }
+  tags = {
+    Name = "event-pub-rtb"
   }
 }
 resource "aws_route_table_association" "public" {
@@ -76,4 +82,3 @@ resource "aws_instance" "event" {
     Name = "wsc2026-event-ec2"
   }
 }
-

@@ -1,5 +1,5 @@
 resource "aws_iam_role" "producer" {
-  name = "wsc2026-sensor-producer-role"
+  name = "wsc2026-msk-ec2-role"
   assume_role_policy = jsonencode({
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Principal = {
