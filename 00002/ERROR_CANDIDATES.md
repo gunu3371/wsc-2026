@@ -1,11 +1,25 @@
 # 00002 공식 질의 후보
 
-원본은 수정하지 않았으며, 실제 구현은 공개 채점에 영향을 주는 조건을 함께 만족하도록 구성했다.
+원본은 수정하지 않았으며, 실제 구현은 공개 채점에 영향을 주는 조건을 가능한 범위에서 함께 만족하도록 구성했다.
 
-| 페이지/문항 | 현재 문구 | 오류라고 판단한 이유 | 제안 변경 문구 | 영향받는 채점 항목 |
-|---|---|---|---|---|
-| 1과제 문제 3단계 ECR / 채점 3-1-A | 문제지는 private repository·scan만 요구하지만 채점 예시는 암호화 형식 `KMS`를 기대 | 문제지만으로 KMS 선택을 알 수 없음 | ECR repository는 customer managed KMS key로 암호화한다고 문제지에 명시 | 1과제 3-1-A |
-| 1과제 Reference03 / 7~9단계 | Lambda 표의 경로는 `/reserv-query`로 보이나 ALB·CloudFront와 채점은 `/book`을 호출 | 외부 공개 경로와 Lambda 기능 경로가 불일치 | 외부 `/book` 요청을 Lambda에 전달한다고 통일하거나 path rewrite 여부 명시 | 7-2-A, 8-3-A, 9-1~3-A |
-| 2과제 Analytics 5단계 / 채점 2-4 | 문제지는 `Apache Flink 1.19`, Studio Notebook을 함께 요구하고 채점은 `ZEPPELIN-FLINK-3_0`을 기대 | AWS Studio Notebook의 runtime 식별자와 일반 Flink runtime 표기가 다름 | 기대 API 값 `ZEPPELIN-FLINK-3_0`과 대응 Flink 버전을 함께 명시 | 2-4 |
-| 2과제 Cloud Event 4단계·배포 lambda.md / 채점 3-1~3-5 | 문제·배포 문서는 SG/role/terminate/type 4종을 설명하지만 채점은 stop remediation, tag alert, AWS Config 규칙도 확인 | 공개 요구와 실제 점검 리소스 집합이 다름 | 필요한 6개 Lambda·EventBridge 및 2개 Config 규칙을 문제지에 모두 열거 | 3-1~3-5 |
-| 2과제 MSK 채점기준 PDF 4-0 / mark2-4.sh | PDF의 준비 명령 일부가 student-score bucket 이름을 사용하지만 실제 스크립트는 sensor-alert bucket을 사용 | 모듈이 다른 버킷명이 복사된 것으로 보임 | `wsc2026-sensor-alert-bucket-<응시번호>`로 통일 | 4-1 |
+## 재확인 범위와 판정
+
+- 재확인일: 2026-08-15
+- 저장소의 00002 자료: `00_최종본_안내.txt` 기준 2026-07-28 수집본, 마지막 원본 첨부는 2026-06-17 07:47의 전체교체본
+- 대조 자료: 최신 수집 문제 PDF, 채점기준 PDF, 채점 스크립트, 공식 배포 Markdown, `docs/2026-07-31 직종협의회.md`
+- 원격 저장소 `main`과 로컬 HEAD는 같은 커밋이었다.
+- 일반 공개된 마이스터넷 공지에서는 00002의 8월 오류 정정문을 찾지 못했다. 과제출제 게시물의 댓글·첨부는 로그인 전용이고 현재 연결된 로그인 세션이 없어, 2026-08-13 이후 비공개 정정 여부는 확인하지 못했다.
+
+2026-06-17 전체교체본은 “채점기준표와 채점스크립트가 상이한 점”을 수정한 자료라고 안내되어 있지만, 아래 불일치는 해당 수집본에 여전히 남아 있다. 따라서 현재 문서는 **확정 오류 목록이 아니라 최신 로그인 전용 정정문과 다시 대조해야 하는 질의 후보**다.
+
+| 상태 | 페이지/문항 | 현재 문구 | 오류·모호성이라고 판단한 이유 | 제안 변경 문구 | 영향받는 채점 항목 |
+|---|---|---|---|---|---|
+| 유지(명세 모호) | 1과제 문제 p.3, 6단계 ECR / 채점 3-1-A | 문제지는 이미지가 “암호화되어 저장”되어야 한다고만 하고, 채점은 암호화 형식 `KMS`를 기대 | ECR은 기본 `AES256`도 암호화에 해당하므로 문제 문구만으로 `KMS`를 선택할 수 없음 | ECR repository의 암호화 형식을 `KMS`로 명시. 고객 관리형 키까지 요구한다면 키 이름도 별도 명시 | 1과제 3-1-A |
+| 유지(명확한 경로 충돌) | 1과제 문제 p.4~7, 10~11단계 및 Reference03 / 채점 7-2-A, 8-3-A, 9-1~3-A | ALB·CloudFront·채점은 `/book`을 사용하지만 Reference03 표는 `/reserv-query`, 요청 예시는 `/reserv_query`를 사용 | 동일 Lambda 호출 경로가 세 종류이며 ALB가 자동으로 경로를 rewrite하지 않음 | 외부와 Lambda 경로를 `/book`으로 통일하거나, 허용 경로와 rewrite 방식을 명시 | 1과제 7-2-A, 8-3-A, 9-1~3-A |
+| 유지(서비스 조합 충돌) | 2과제 문제 p.3, Analytics 5단계 / 채점 2-4 | 문제지는 Studio Notebook과 `Apache Flink 1.19`를 동시에 요구하고, 채점은 `ZEPPELIN-FLINK-3_0`을 기대 | AWS 공식 문서상 Studio Notebook은 Zeppelin 기반이며 현재 Flink 1.19 Studio 지원에 제약이 있다. 일반 Flink 1.19 API 값 `FLINK-1_19`와 Studio 값 `ZEPPELIN-FLINK-3_0`은 서로 다른 런타임 | Studio Notebook을 유지한다면 기대 API 값과 대응 버전을 명시하고, Flink 1.19가 필수라면 Studio 요구 또는 채점값을 변경 | 2과제 2-4 |
+| 유지(명확한 리소스 집합 충돌) | 2과제 문제 p.4~5, Cloud Event 4~6단계·배포 `module3/lambda.md` / 채점 3-1~3-5 | 문제·배포 문서는 SG, role, terminate, type 4종을 요구하지만 채점 스크립트는 stop, terminate, SG, tag Lambda와 stop/terminate EventBridge, AWS Config 규칙을 확인 | role/type 요구가 stop/tag/Config 점검으로 바뀌었으며 문제지만으로 채점 리소스 전체를 알 수 없음 | 문제지·배포 문서·채점표·스크립트에서 Lambda, EventBridge, Config 리소스 이름과 동작을 하나의 목록으로 통일 | 2과제 3-1~3-5 |
+| 유지(PDF 오타, 스크립트는 이미 정상) | 2과제 채점기준 MSK 4-0 / `mark2-4.sh` | 채점기준 PDF의 준비 명령은 `wsc2026-student-score-bucket-<비번호>`를 사용하지만 같은 항목의 예상 출력과 실제 스크립트는 sensor-alert bucket을 사용 | 다른 모듈의 버킷명이 복사된 것으로 보이며, 자동 채점 스크립트는 이미 올바른 sensor-alert 이름을 사용 | PDF 준비 명령을 `wsc2026-sensor-alert-bucket-<비번호>`로 정정 | 2과제 4-1 |
+
+## 공식 확인 시 처리 기준
+
+마이스터넷 로그인 전용 최신 댓글이나 첨부에서 동일 항목의 정정이 확인되면 해당 행을 삭제하지 말고 `해소(정정일·정정 문구·첨부명)` 상태로 먼저 기록한다. 새 전체교체본을 저장소에 반영한 뒤 문제 PDF, 채점기준 PDF, 스크립트의 세 자료가 실제로 일치하는지 다시 확인하고 최종적으로 제거한다.

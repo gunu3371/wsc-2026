@@ -2,6 +2,10 @@ resource "aws_sns_topic" "alert" {
   name = "wsc2026-event-alert"
 }
 
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
 resource "aws_s3_bucket" "audit" {
   bucket        = "wsc2026-event-audit-${data.aws_caller_identity.current.account_id}-${random_id.suffix.hex}"
   force_destroy = true
@@ -65,4 +69,3 @@ resource "aws_cloudtrail" "event" {
   }
   depends_on = [aws_s3_bucket_policy.audit]
 }
-

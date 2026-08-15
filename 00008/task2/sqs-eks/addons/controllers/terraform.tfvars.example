@@ -1,0 +1,2 @@
+keda_chart_version      = "2.17.2"
+karpenter_chart_version = "1.6.3"

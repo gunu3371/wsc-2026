@@ -4,16 +4,16 @@
 
 | 단계 | 리전·네트워크·이름·버전 | 구현 파일 |
 |---|---|---|
-| 1 Network | ap-northeast-2, VPC `172.16.0.0/16`, public `1/24·2/24`, private `201/24·202/24`, AZ c/d, AZ별 NAT | `task1/01-network.tf` |
-| 2 S3 | `wskorea26-concert-bucket-<응시번호>`, `web/main/index.html`, `web/main/main.jpeg`, KMS alias `wskorea26-s3-key`, public 차단 | `task1/02-static-storage.tf` |
-| 3 ECR | `wskorea26-book-repo`, private, scan on push, KMS, `stable` 이미지 | `task1/03-container-registry.tf`, `Dockerfile`, `push-image.sh` |
-| 4 DynamoDB | `wskorea26-data-table`, PK `client_id(S)`, 삭제 방지, KMS alias `wskorea26-dynamodb-key` | `task1/04-database.tf` |
-| 5 EKS | `wskorea26-cluster` 1.35, private endpoint, 전체 control-plane log, secrets KMS, private c/d, addon/app t3.medium nodegroup와 label/taint | `task1/05-eks.tf`, `task1/platform/01-application.tf` |
-| 6 Lambda | `wskorea26-book-lambda`, Python 3.14, `TABLE_NAME`, GET query와 400/200 처리 | `task1/06-lambda.tf`, `task1/lambda/book.py` |
-| 7 ALB | `wskorea26-book-alb`, internet-facing HTTP 80, `/book`, 검증 header 없으면 403 | `task1/07-application-load-balancer.tf` |
-| 8 CloudFront | S3 기본 origin, `/book*` ALB origin, HTTP→HTTPS, OAC, `X-Origin-Verify` | `task1/08-cloudfront.tf` |
-| 9 Application | POST booking과 GET query, KST `created_at`, 빈 결과 `[]` | 4·6·7·8단계 및 `task1/platform/01-application.tf` |
-| 10 Monitoring | addon nodegroup의 kube-prometheus-stack, Grafana NodePort/ALB, 5개 지정 패널 | `task1/10-monitoring.tf`, `task1/platform/02-monitoring.tf`, `dashboard.json` |
+| 1 Network | ap-northeast-2, VPC `172.16.0.0/16`, public `1/24·2/24`, private `201/24·202/24`, AZ c/d, AZ별 NAT | `task1/foundation/01-network.tf` |
+| 2 S3 | `wskorea26-concert-bucket-<응시번호>`, `web/main/index.html`, `web/main/main.jpeg`, KMS alias `wskorea26-s3-key`, public 차단 | `task1/foundation/02-static-storage.tf` |
+| 3 ECR | `wskorea26-book-repo`, private, scan on push, KMS, `stable` 이미지 | `task1/foundation/03-container-registry.tf`, `Dockerfile`, `push-image.sh` |
+| 4 DynamoDB | `wskorea26-data-table`, PK `client_id(S)`, 삭제 방지, KMS alias `wskorea26-dynamodb-key` | `task1/foundation/04-database.tf` |
+| 5 EKS | `wskorea26-cluster` 1.35, private endpoint, 전체 control-plane log, secrets KMS, private c/d, addon/app t3.medium nodegroup와 label/taint | `task1/foundation/05-eks.tf`, `task1/application/01-application.tf` |
+| 6 Lambda | `wskorea26-book-lambda`, Python 3.14, `TABLE_NAME`, GET query와 400/200 처리 | `task1/foundation/06-lambda.tf`, `task1/foundation/lambda/book.py` |
+| 7 ALB | `wskorea26-book-alb`, internet-facing HTTP 80, `/book`, 검증 header 없으면 403 | `task1/foundation/07-application-load-balancer.tf` |
+| 8 CloudFront | S3 기본 origin, `/book*` ALB origin, HTTP→HTTPS, OAC, `X-Origin-Verify` | `task1/foundation/08-cloudfront.tf` |
+| 9 Application | POST booking과 GET query, KST `created_at`, 빈 결과 `[]` | 4·6·7·8단계 및 `task1/application/01-application.tf` |
+| 10 Monitoring | addon nodegroup의 kube-prometheus-stack, Grafana NodePort/ALB, 5개 지정 패널 | `task1/foundation/10-monitoring.tf`, `task1/application/02-monitoring.tf`, `dashboard.json` |
 
 ## 2과제
 

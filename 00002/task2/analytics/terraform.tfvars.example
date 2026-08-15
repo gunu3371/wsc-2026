@@ -1,0 +1,2 @@
+candidate_id = "00002"
+allowed_cidr = "0.0.0.0/0"

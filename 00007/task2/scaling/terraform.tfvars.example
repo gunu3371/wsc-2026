@@ -1,0 +1,2 @@
+order_processor_image = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/order-processor@sha256:replace-me"
+kubernetes_version    = "1.35"

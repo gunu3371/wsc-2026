@@ -1,6 +1,3 @@
-locals {
-  bucket = "wsc2026-student-score-bucket-${var.candidate_id}"
-}
 resource "aws_s3_bucket" "this" {
   bucket        = local.bucket
   force_destroy = true

@@ -4,8 +4,8 @@ terraform {
     aws = {
       source = "hashicorp/aws", version = "~> 6.0"
     }
-    awscc = {
-      source = "hashicorp/awscc", version = "~> 1.0"
+    archive = {
+      source = "hashicorp/archive", version = "~> 2.4"
     }
   }
 }
@@ -13,12 +13,10 @@ provider "aws" {
   region  = "ap-northeast-2"
   profile = var.aws_profile
   default_tags {
-    tags = merge(var.tags, { CandidateId = var.candidate_id })
+    tags = merge({
+      Project     = "wskorea26-concert"
+      CandidateId = var.candidate_id
+      ManagedBy   = "Terraform"
+    }, var.tags)
   }
 }
-
-provider "awscc" {
-  region  = "ap-northeast-2"
-  profile = var.aws_profile
-}
-

@@ -1,0 +1,5 @@
+foundation_state_path = "../foundation/terraform.tfstate"
+cluster_state_path    = "../cluster/terraform.tfstate"
+app_image             = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/unicorn-concert-app@sha256:replace-me"
+audit_principal_arn   = "arn:aws:iam::123456789012:role/audit-reader"
+competitor_number     = "00007"

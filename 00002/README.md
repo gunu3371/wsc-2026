@@ -17,9 +17,10 @@
 
 ```text
 00002/
-├── task1/                       # 1과제 AWS 기반 root/state
-│   ├── 00-common.tf ~ 10-monitoring.tf
-│   └── platform/               # EKS Kubernetes/Helm root/state
+├── task1/
+│   ├── foundation/             # 1과제 AWS 기반 root/state
+│   │   └── 00-common.tf ~ 10-monitoring.tf
+│   └── application/            # EKS Kubernetes/Helm root/state
 └── task2/
     ├── workflow/               # ap-southeast-1, 독립 root/state
     ├── analytics/              # ap-northeast-2, 독립 root/state
@@ -27,7 +28,7 @@
     └── msk/                    # ap-northeast-1, 독립 root/state
 ```
 
-1과제는 `task1 → task1/platform` 순으로 적용한다. `platform`은 기반 output만 읽으며 EKS 워크로드와 모니터링을 소유한다. 2과제 네 모듈은 리전과 수명주기가 달라 서로 state를 공유하지 않으며 독립적으로 plan/apply/destroy할 수 있다. 이미 적용된 state 주소를 불필요하게 이동하지 않기 위해 현재 두 root 경계를 유지했다.
+1과제는 `task1/foundation → task1/application` 순으로 적용한다. `application`은 foundation output만 읽으며 EKS 워크로드와 모니터링을 소유한다. 디렉터리를 옮겼지만 기존 두 root/state 경계와 각 Terraform 리소스 주소는 유지한다. 2과제 네 root는 리전과 수명주기가 달라 서로 state를 공유하지 않으며 독립적으로 plan/apply/destroy할 수 있다. 모든 root는 `00-common.tf`, 단계 번호 파일, `versions.tf`, `variables.tf`, `outputs.tf`, `terraform.tfvars.example`의 공통 형식을 사용한다.
 
 ## 주요 고정값
 
@@ -73,20 +74,35 @@ terraform validate
 terraform plan -input=false -var-file=terraform.tfvars
 ```
 
-변수 파일이 필요 없는 `analytics`, `cloud-event`는 마지막 옵션을 생략할 수 있다. 적용은 검증 성공 후 사용자가 명시적으로 허용한 경우에만 같은 인수로 `terraform apply`를 실행한다.
+각 root의 `terraform.tfvars.example`을 복사한 뒤 마지막 옵션을 사용한다. 적용은 검증 성공 후 사용자가 명시적으로 허용한 경우에만 같은 인수로 `terraform apply`를 실행한다.
+
+`task1/application`은 `foundation` state의 EKS output을 읽으므로 foundation을 먼저 apply해야 plan할 수 있다. foundation state가 비어 있는 초기 상태에서는 application의 `validate`까지만 성공하는 것이 정상이다.
 
 1과제 적용 순서는 다음과 같다.
 
 ```powershell
-Set-Location 00002/task1
+Set-Location 00002/task1/foundation
 Copy-Item terraform.tfvars.example terraform.tfvars
 terraform init -input=false
 terraform apply -var-file=terraform.tfvars
 ```
 
-ECR 생성 후 Git Bash 또는 WSL에서 `./push-image.sh`로 공식 `book` 바이너리 이미지를 `stable` 태그로 push한다. 이어 `task1/platform/terraform.tfvars`의 `book_image_uri`를 실제 ECR URI로 설정하고, EKS private endpoint에 접근할 수 있는 CloudShell VPC 환경에서 platform을 적용한다.
+ECR 생성 후 Git Bash 또는 WSL에서 `./push-image.sh`로 공식 `book` 바이너리 이미지를 `stable` 태그로 push한다. 이어 `task1/application/terraform.tfvars`의 `book_image_uri`를 실제 ECR URI로 설정하고, EKS private endpoint에 접근할 수 있는 CloudShell VPC 환경에서 application을 적용한다.
 
 2과제는 `workflow`, `analytics`, `cloud-event`, `msk`를 각각 해당 디렉터리에서 독립 실행한다. Workflow의 샘플 CSV 업로드와 MSK producer 설치는 해당 root apply에 포함된다.
+
+## 일회성 ECR 이미지 푸시 베스천
+
+로컬 Docker를 사용할 수 없을 때만 `task1/extensions/grading-bastion`을 사용한다. 이 독립 root는 private subnet의 SSM 전용 EC2, 최소 ECR/S3/KMS 권한, 임시 Docker build 객체만 생성한다. 이미지 푸시와 ECR 확인이 끝나면 반드시 destroy한다. SSH와 public IP는 사용하지 않는다.
+
+```powershell
+Set-Location 00002/task1/extensions/grading-bastion
+terraform init -input=false
+terraform apply -var-file=terraform.tfvars.example
+# SSM Run Command로 Docker build/push 후 ECR stable 태그를 확인한다.
+terraform apply -var-file=terraform.tfvars.example -var='dynamodb_deletion_protection_enabled=false'
+terraform destroy -var-file=terraform.tfvars.example -var='dynamodb_deletion_protection_enabled=false'
+```
 
 ## 채점
 
@@ -106,12 +122,12 @@ bash mark.sh
 1과제는 외부 ALB를 만드는 Kubernetes/Helm 리소스를 먼저 제거한 뒤 기반을 제거한다.
 
 ```powershell
-Set-Location 00002/task1/platform
+Set-Location 00002/task1/application
 terraform destroy -var-file=terraform.tfvars
-Set-Location ..
+Set-Location ../foundation
 terraform destroy -var-file=terraform.tfvars
 ```
 
-2과제는 producer와 이벤트 생산을 먼저 중지하고 `msk`, `cloud-event`, `analytics`, `workflow`를 각 root에서 독립 destroy한다. S3는 해당 과제 버킷만 비우며, CloudTrail과 producer가 더 이상 쓰지 않는지 먼저 확인한다. KMS 키는 즉시 삭제되지 않고 AWS가 허용하는 대기 기간 뒤 삭제된다.
+2과제는 producer와 이벤트 생산을 먼저 중지하고 `msk`, `cloud-event`, `analytics`, `workflow`를 각 root에서 독립 destroy한다. S3는 해당 과제 버킷만 비우며, CloudTrail과 producer가 더 이상 쓰지 않는지 먼저 확인한다. MSK의 VPC Lambda를 삭제한 직후에는 AWS가 Lambda ENI를 비동기로 회수하므로, security group 또는 subnet 삭제가 `DependencyViolation`으로 대기하면 ENI가 `available` 또는 삭제될 때까지 기다린 뒤 같은 `terraform destroy`를 재실행한다. `in-use` 상태의 AWS 관리 ENI를 강제로 삭제하지 않는다. KMS 키는 즉시 삭제되지 않고 AWS가 허용하는 대기 기간 뒤 삭제된다.
 
 마지막으로 각 state의 관리 리소스 수가 0인지 확인하고, 해당 리전의 EC2/VPC/ENI/ELB/EKS/MSK/Lambda/DynamoDB/S3/CloudTrail/EventBridge/Config/SNS/CloudWatch/IAM/KMS를 이름과 태그로 교차 확인한다.

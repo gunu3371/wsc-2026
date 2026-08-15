@@ -2,6 +2,9 @@ variable "aws_profile" {
   type    = string
   default = null
 }
+variable "candidate_id" {
+  type = string
+}
 variable "availability_zones" {
   type    = list(string)
   default = ["eu-west-1a", "eu-west-1b"]
