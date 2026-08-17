@@ -1,0 +1,17 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "mkdir -p /opt/wsc2026-book && cd /opt/wsc2026-book",
+      "aws s3 cp s3://wsc2026-static-pvdx-00003-bucket/grading/book-linux-amd64_v1.0.1 ./book",
+      "chmod +x /opt/wsc2026-book/book",
+      "printf 'FROM public.ecr.aws/amazonlinux/amazonlinux:2023\\nCOPY book /book\\nEXPOSE 8080\\nENTRYPOINT [\\\"/book\\\"]\\n' > /opt/wsc2026-book/Dockerfile",
+      "systemctl enable --now docker",
+      "cd /opt/wsc2026-book && docker build -t wsc2026-book .",
+      "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 969283154659.dkr.ecr.ap-northeast-2.amazonaws.com",
+      "docker tag wsc2026-book:latest 969283154659.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr:latest",
+      "docker push 969283154659.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr:latest"
+    ]
+  }
+}

@@ -8,7 +8,7 @@ resource "aws_vpc" "main" {
   cidr_block           = "10.73.0.0/16"
   enable_dns_support   = true
   enable_dns_hostnames = true
-  tags = { Name = "skills-ceh-vpc" }
+  tags                 = { Name = "skills-ceh-vpc" }
 }
 
 resource "aws_subnet" "main" {
@@ -16,7 +16,7 @@ resource "aws_subnet" "main" {
   cidr_block              = "10.73.1.0/24"
   availability_zone       = "ap-southeast-1a"
   map_public_ip_on_launch = false
-  tags = { Name = "skills-ceh-private-subnet" }
+  tags                    = { Name = "skills-ceh-private-subnet" }
 }
 
 resource "aws_security_group" "protected" {
@@ -151,7 +151,7 @@ resource "aws_lambda_permission" "eventbridge" {
 
 resource "aws_s3_bucket" "trail" {
   bucket        = "skills-ceh-cloudtrail-${data.aws_caller_identity.current.account_id}"
-  force_destroy = var.force_destroy
+  force_destroy = var.cleanup_mode || var.force_destroy
   tags          = { Name = "skills-ceh-cloudtrail" }
 }
 
@@ -206,6 +206,11 @@ resource "aws_cloudtrail" "main" {
 variable "force_destroy" {
   type    = bool
   default = false
+}
+variable "cleanup_mode" {
+  description = "CloudTrail을 먼저 중지한 뒤 버킷의 로그 객체까지 함께 삭제하는 정리 모드입니다."
+  type        = bool
+  default     = false
 }
 
 output "protected_security_group_id" { value = aws_security_group.protected.id }

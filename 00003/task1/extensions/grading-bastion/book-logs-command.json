@@ -1,0 +1,10 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "export KUBECONFIG=/tmp/wsc2026-kubeconfig",
+      "kubectl -n wsc2026 logs deployment/wsc2026-book-deploy --all-pods=true --tail=200 | grep -Ei 'error|failed|kms|denied' | tail -n 80"
+    ]
+  }
+}

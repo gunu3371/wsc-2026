@@ -17,11 +17,13 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.this.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.this.token
 }
-resource "kubernetes_namespace_v1" "worker" { metadata { name = "skills-sqs" } }
+resource "kubernetes_namespace_v1" "worker" {
+  metadata { name = "skills-sqs" }
+}
 resource "kubernetes_service_account_v1" "worker" {
   metadata {
-    name      = "sqs-worker-sa"
-    namespace = kubernetes_namespace_v1.worker.metadata[0].name
+    name        = "sqs-worker-sa"
+    namespace   = kubernetes_namespace_v1.worker.metadata[0].name
     annotations = { "eks.amazonaws.com/role-arn" = data.terraform_remote_state.infra.outputs.worker_role_arn }
   }
 }
@@ -71,7 +73,12 @@ resource "kubernetes_manifest" "trigger_auth" {
     apiVersion = "keda.sh/v1alpha1"
     kind       = "TriggerAuthentication"
     metadata   = { name = "sqs-worker-trigger-auth", namespace = kubernetes_namespace_v1.worker.metadata[0].name }
-    spec       = { podIdentity = { provider = "aws-eks" } }
+    spec = {
+      podIdentity = {
+        provider      = "aws"
+        identityOwner = "keda"
+      }
+    }
   }
 }
 resource "kubernetes_manifest" "scaled_object" {
@@ -103,13 +110,18 @@ resource "kubernetes_manifest" "node_class" {
     kind       = "EC2NodeClass"
     metadata   = { name = "skills-sqs-nodeclass" }
     spec = {
-      role = data.terraform_remote_state.infra.outputs.node_role_name
+      role             = data.terraform_remote_state.infra.outputs.node_role_name
       amiSelectorTerms = [{ alias = "al2023@latest" }]
-      subnetSelectorTerms = [{ tags = { "karpenter.sh/discovery" = data.aws_eks_cluster.this.name } }]
+      subnetSelectorTerms = [{
+        tags = {
+          "karpenter.sh/discovery"          = data.aws_eks_cluster.this.name
+          "kubernetes.io/role/internal-elb" = "1"
+        }
+      }]
       securityGroupSelectorTerms = [{ tags = { "karpenter.sh/discovery" = data.aws_eks_cluster.this.name } }]
-      metadataOptions = { httpEndpoint = "enabled", httpProtocolIPv6 = "disabled", httpPutResponseHopLimit = 2, httpTokens = "required" }
-      blockDeviceMappings = [{ deviceName = "/dev/xvda", ebs = { volumeSize = "20Gi", volumeType = "gp3", encrypted = true, deleteOnTermination = true } }]
-      tags = { Name = "skills-sqs-worker", "karpenter.sh/discovery" = data.aws_eks_cluster.this.name }
+      metadataOptions            = { httpEndpoint = "enabled", httpProtocolIPv6 = "disabled", httpPutResponseHopLimit = 2, httpTokens = "required" }
+      blockDeviceMappings        = [{ deviceName = "/dev/xvda", ebs = { volumeSize = "20Gi", volumeType = "gp3", encrypted = true, deleteOnTermination = true } }]
+      tags                       = { Name = "skills-sqs-worker", "karpenter.sh/discovery" = data.aws_eks_cluster.this.name }
     }
   }
 }

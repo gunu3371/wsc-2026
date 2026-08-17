@@ -25,8 +25,12 @@ provider "helm" {
     token                  = data.aws_eks_cluster_auth.this.token
   }
 }
-resource "kubernetes_namespace_v1" "keda" { metadata { name = "keda" } }
-resource "kubernetes_namespace_v1" "karpenter" { metadata { name = "karpenter" } }
+resource "kubernetes_namespace_v1" "keda" {
+  metadata { name = "keda" }
+}
+resource "kubernetes_namespace_v1" "karpenter" {
+  metadata { name = "karpenter" }
+}
 resource "kubernetes_annotations" "coredns" {
   api_version = "apps/v1"
   kind        = "Deployment"
@@ -34,8 +38,11 @@ resource "kubernetes_annotations" "coredns" {
     name      = "coredns"
     namespace = "kube-system"
   }
-  annotations = { "eks.amazonaws.com/compute-type" = "fargate" }
-  force       = true
+  annotations = {}
+  template_annotations = {
+    "eks.amazonaws.com/compute-type" = "fargate"
+  }
+  force = true
 }
 resource "helm_release" "keda" {
   name       = "keda"
@@ -46,8 +53,8 @@ resource "helm_release" "keda" {
   values = [yamlencode({
     serviceAccount = {
       operator = {
-        create = true
-        name   = "keda-operator"
+        create      = true
+        name        = "keda-operator"
         annotations = { "eks.amazonaws.com/role-arn" = data.terraform_remote_state.infra.outputs.keda_role_arn }
       }
     }
@@ -55,29 +62,20 @@ resource "helm_release" "keda" {
   })]
 }
 resource "helm_release" "karpenter" {
-  name                = "karpenter"
-  namespace           = kubernetes_namespace_v1.karpenter.metadata[0].name
-  repository          = "oci://public.ecr.aws/karpenter"
-  chart               = "karpenter"
-  version             = var.karpenter_chart_version
-  repository_username = "AWS"
-  repository_password = data.aws_ecrpublic_authorization_token.token.password
+  name       = "karpenter"
+  namespace  = kubernetes_namespace_v1.karpenter.metadata[0].name
+  repository = "oci://public.ecr.aws/karpenter"
+  chart      = "karpenter"
+  version    = var.karpenter_chart_version
   values = [yamlencode({
     serviceAccount = {
       create      = true
       name        = "karpenter"
       annotations = { "eks.amazonaws.com/role-arn" = data.terraform_remote_state.infra.outputs.karpenter_role_arn }
     }
-    settings = { clusterName = data.aws_eks_cluster.this.name }
+    settings   = { clusterName = data.aws_eks_cluster.this.name }
     controller = { resources = { requests = { cpu = "250m", memory = "256Mi" }, limits = { cpu = "1", memory = "1Gi" } } }
   })]
-}
-data "aws_ecrpublic_authorization_token" "token" {
-  provider = aws.use1
-}
-provider "aws" {
-  alias  = "use1"
-  region = "us-east-1"
 }
 variable "keda_chart_version" {
   type    = string

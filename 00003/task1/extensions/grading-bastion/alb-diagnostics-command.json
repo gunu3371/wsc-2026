@@ -1,0 +1,11 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "export KUBECONFIG=/tmp/wsc2026-kubeconfig",
+      "kubectl -n wsc2026 describe ingress wsc2026-book-ingress",
+      "kubectl -n kube-system logs deployment/aws-load-balancer-controller --all-containers=true --tail=160"
+    ]
+  }
+}

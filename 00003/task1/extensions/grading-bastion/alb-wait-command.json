@@ -1,0 +1,13 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "set -e",
+      "export KUBECONFIG=/tmp/wsc2026-kubeconfig",
+      "for i in $(seq 1 36); do host=$(kubectl -n wsc2026 get ingress wsc2026-book-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'); if [ -n \"$host\" ]; then echo \"$host\"; exit 0; fi; sleep 10; done",
+      "kubectl -n wsc2026 describe ingress wsc2026-book-ingress",
+      "exit 1"
+    ]
+  }
+}

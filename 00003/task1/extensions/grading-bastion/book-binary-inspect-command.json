@@ -1,0 +1,9 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "strings /opt/wsc2026-book/book | sed -n '/Concert booking API server/,+30p'"
+    ]
+  }
+}

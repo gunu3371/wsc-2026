@@ -1,0 +1,20 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "set -e",
+      "aws eks update-kubeconfig --region ap-northeast-2 --name wsc2026-eks-cluster --kubeconfig /tmp/wsc2026-kubeconfig",
+      "export KUBECONFIG=/tmp/wsc2026-kubeconfig",
+      "kubectl wait --for=condition=Ready nodes --all --timeout=180s",
+      "kubectl -n wsc2026 rollout status deployment/wsc2026-book-deploy --timeout=180s",
+      "kubectl -n kube-system rollout status deployment/aws-load-balancer-controller --timeout=180s",
+      "kubectl get nodes -o wide",
+      "kubectl -n wsc2026 get deployment,pod,service,ingress,pdb -o wide",
+      "kubectl -n kube-system get deployment,pod -l app.kubernetes.io/name=aws-load-balancer-controller -o wide",
+      "kubectl -n observability get pod -o wide",
+      "kubectl -n observability get prometheusrule wsc2026-alerts",
+      "kubectl -n wsc2026 get ingress wsc2026-book-ingress -o jsonpath='{.status.loadBalancer.ingress[0].hostname}{\"\\n\"}'"
+    ]
+  }
+}

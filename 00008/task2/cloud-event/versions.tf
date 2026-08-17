@@ -8,5 +8,12 @@ terraform {
 
 provider "aws" {
   region = "ap-southeast-1"
+  default_tags {
+    tags = {
+      Project     = "national-skills-2026"
+      CandidateId = "00008"
+      ManagedBy   = "Terraform"
+    }
+  }
 }
 

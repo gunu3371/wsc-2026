@@ -1,0 +1,11 @@
+# Terraform local working artifacts
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+# Generated Lambda archive for 00003
+00003/task1/platform/book_get.zip
+
+# Temporary grading-bastion addon package (over 100 MiB)
+00003/task1/extensions/grading-bastion/addons.zip

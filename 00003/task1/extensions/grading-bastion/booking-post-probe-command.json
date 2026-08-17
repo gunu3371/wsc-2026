@@ -1,0 +1,15 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "set -e",
+      "export KUBECONFIG=/tmp/wsc2026-kubeconfig",
+      "kubectl -n wsc2026 delete pod pregrading-post-probe --ignore-not-found=true",
+      "kubectl -n wsc2026 run pregrading-post-probe --restart=Never --image=curlimages/curl --command -- curl -sS -i -X POST http://wsc2026-book-svc/booking -H 'Content-Type: application/json' --data-raw '{\"client_id\":\"PRECHECK-SSM-20260817\",\"username\":\"Precheck\",\"email\":\"precheck@example.com\",\"concert_name\":\"PrecheckConcert\"}'",
+      "kubectl -n wsc2026 wait --for=jsonpath='{.status.phase}'=Succeeded pod/pregrading-post-probe --timeout=120s || true",
+      "kubectl -n wsc2026 logs pregrading-post-probe",
+      "kubectl -n wsc2026 delete pod pregrading-post-probe --wait=true"
+    ]
+  }
+}

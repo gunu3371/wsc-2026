@@ -1,0 +1,16 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "set -e",
+      "export KUBECONFIG=/tmp/wsc2026-kubeconfig",
+      "kubectl -n wsc2026 delete pod pregrading-probe --ignore-not-found=true",
+      "kubectl -n wsc2026 run pregrading-probe --restart=Never --image=curlimages/curl --command -- sh -c 'for p in / /health /healthz /booking; do code=$(curl -sS -o /tmp/body -w \"%{http_code}\" http://wsc2026-book-svc$p); echo \"$p $code $(cat /tmp/body)\"; done'",
+      "kubectl -n wsc2026 wait --for=condition=Ready pod/pregrading-probe --timeout=120s || true",
+      "kubectl -n wsc2026 wait --for=jsonpath='{.status.phase}'=Succeeded pod/pregrading-probe --timeout=120s || true",
+      "kubectl -n wsc2026 logs pregrading-probe",
+      "kubectl -n wsc2026 delete pod pregrading-probe --wait=true"
+    ]
+  }
+}

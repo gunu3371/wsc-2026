@@ -16,7 +16,7 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
   enable_dns_hostnames = true
   tags = {
-    Name                                      = "skills-sqs-vpc"
+    Name                                          = "skills-sqs-vpc"
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
   }
 }
@@ -31,10 +31,10 @@ resource "aws_subnet" "this" {
   availability_zone       = each.value.az
   map_public_ip_on_launch = each.value.public
   tags = {
-    Name                                           = "skills-sqs-${each.key}-subnet"
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    Name                                                               = "skills-sqs-${each.key}-subnet"
+    "kubernetes.io/cluster/${local.cluster_name}"                      = "shared"
     "kubernetes.io/role/${each.value.public ? "elb" : "internal-elb"}" = "1"
-    "karpenter.sh/discovery"                      = local.cluster_name
+    "karpenter.sh/discovery"                                           = local.cluster_name
   }
 }
 resource "aws_eip" "nat" {
@@ -75,7 +75,7 @@ resource "aws_route_table_association" "private" {
 }
 
 resource "aws_iam_role" "cluster" {
-  name = "skills-sqs-cluster-role"
+  name               = "skills-sqs-cluster-role"
   assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { Service = "eks.amazonaws.com" }, Action = "sts:AssumeRole" }] })
 }
 resource "aws_iam_role_policy_attachment" "cluster" {
@@ -97,7 +97,7 @@ resource "aws_security_group" "cluster" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = { Name = "skills-sqs-cluster-sg", "karpenter.sh/discovery" = local.cluster_name }
+  tags = { Name = "skills-sqs-cluster-sg" }
 }
 resource "aws_eks_cluster" "main" {
   name     = local.cluster_name
@@ -118,6 +118,12 @@ resource "aws_eks_cluster" "main" {
   tags       = { Name = local.cluster_name }
 }
 
+resource "aws_ec2_tag" "cluster_security_group_discovery" {
+  resource_id = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
+  key         = "karpenter.sh/discovery"
+  value       = local.cluster_name
+}
+
 data "tls_certificate" "oidc" { url = aws_eks_cluster.main.identity[0].oidc[0].issuer }
 resource "aws_iam_openid_connect_provider" "eks" {
   url             = aws_eks_cluster.main.identity[0].oidc[0].issuer
@@ -128,7 +134,7 @@ locals {
   oidc_host = replace(aws_iam_openid_connect_provider.eks.url, "https://", "")
 }
 resource "aws_iam_role" "fargate" {
-  name = "skills-sqs-fargate-pod-execution-role"
+  name               = "skills-sqs-fargate-pod-execution-role"
   assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { Service = "eks-fargate-pods.amazonaws.com" }, Action = "sts:AssumeRole" }] })
 }
 resource "aws_iam_role_policy_attachment" "fargate" {
@@ -149,7 +155,7 @@ resource "aws_eks_fargate_profile" "karpenter" {
   pod_execution_role_arn = aws_iam_role.fargate.arn
   subnet_ids             = [aws_subnet.this["private-a"].id, aws_subnet.this["private-b"].id]
   selector { namespace = "karpenter" }
-  depends_on = [aws_iam_role_policy_attachment.fargate, aws_eks_fargate_profile.keda]
+  depends_on = [aws_iam_role_policy_attachment.fargate]
 }
 resource "aws_eks_fargate_profile" "coredns" {
   cluster_name           = aws_eks_cluster.main.name
@@ -160,7 +166,7 @@ resource "aws_eks_fargate_profile" "coredns" {
     namespace = "kube-system"
     labels    = { "k8s-app" = "kube-dns" }
   }
-  depends_on = [aws_iam_role_policy_attachment.fargate, aws_eks_fargate_profile.karpenter]
+  depends_on = [aws_iam_role_policy_attachment.fargate]
 }
 
 resource "aws_sqs_queue" "worker" {
@@ -173,6 +179,7 @@ resource "aws_sqs_queue" "worker" {
 resource "aws_ecr_repository" "worker" {
   name                 = "skills-sqs-worker"
   image_tag_mutability = "IMMUTABLE"
+  force_delete         = var.cleanup_mode
   image_scanning_configuration { scan_on_push = true }
   tags = { Name = "skills-sqs-worker" }
 }
@@ -180,34 +187,34 @@ resource "aws_ecr_repository" "worker" {
 resource "aws_iam_role" "keda" {
   name = "skills-sqs-keda-role"
   assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{
-    Effect = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }, Action = "sts:AssumeRoleWithWebIdentity",
+    Effect    = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }, Action = "sts:AssumeRoleWithWebIdentity",
     Condition = { StringEquals = { "${local.oidc_host}:aud" = "sts.amazonaws.com", "${local.oidc_host}:sub" = "system:serviceaccount:keda:keda-operator" } }
   }] })
 }
 resource "aws_iam_role_policy" "keda" {
-  name = "skills-sqs-keda-policy"
-  role = aws_iam_role.keda.id
+  name   = "skills-sqs-keda-policy"
+  role   = aws_iam_role.keda.id
   policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Action = ["sqs:GetQueueAttributes", "sqs:GetQueueUrl"], Resource = aws_sqs_queue.worker.arn }] })
 }
 resource "aws_iam_role" "worker" {
   name = "skills-sqs-worker-role"
   assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{
-    Effect = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }, Action = "sts:AssumeRoleWithWebIdentity",
+    Effect    = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }, Action = "sts:AssumeRoleWithWebIdentity",
     Condition = { StringEquals = { "${local.oidc_host}:aud" = "sts.amazonaws.com", "${local.oidc_host}:sub" = "system:serviceaccount:skills-sqs:sqs-worker-sa" } }
   }] })
 }
 resource "aws_iam_role_policy" "worker" {
-  name = "skills-sqs-worker-policy"
-  role = aws_iam_role.worker.id
+  name   = "skills-sqs-worker-policy"
+  role   = aws_iam_role.worker.id
   policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Action = ["sqs:GetQueueAttributes", "sqs:GetQueueUrl", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:ChangeMessageVisibility"], Resource = aws_sqs_queue.worker.arn }] })
 }
 
 resource "aws_iam_role" "node" {
-  name = "skills-sqs-karpenter-node-role"
+  name               = "skills-sqs-karpenter-node-role"
   assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{ Effect = "Allow", Principal = { Service = "ec2.amazonaws.com" }, Action = "sts:AssumeRole" }] })
 }
 resource "aws_iam_role_policy_attachment" "node" {
-  for_each = toset(["AmazonEKSWorkerNodePolicy", "AmazonEC2ContainerRegistryPullOnly", "AmazonEKS_CNI_Policy", "AmazonSSMManagedInstanceCore"])
+  for_each   = toset(["AmazonEKSWorkerNodePolicy", "AmazonEC2ContainerRegistryPullOnly", "AmazonEKS_CNI_Policy", "AmazonSSMManagedInstanceCore"])
   role       = aws_iam_role.node.name
   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/${each.key}"
 }
@@ -219,7 +226,7 @@ resource "aws_eks_access_entry" "node" {
 resource "aws_iam_role" "karpenter" {
   name = "skills-sqs-karpenter-role"
   assume_role_policy = jsonencode({ Version = "2012-10-17", Statement = [{
-    Effect = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }, Action = "sts:AssumeRoleWithWebIdentity",
+    Effect    = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.eks.arn }, Action = "sts:AssumeRoleWithWebIdentity",
     Condition = { StringEquals = { "${local.oidc_host}:aud" = "sts.amazonaws.com", "${local.oidc_host}:sub" = "system:serviceaccount:karpenter:karpenter" } }
   }] })
 }
@@ -242,6 +249,11 @@ variable "kubernetes_version" {
 variable "cluster_public_access_cidrs" {
   type    = list(string)
   default = ["0.0.0.0/0"]
+}
+variable "cleanup_mode" {
+  description = "ECR 이미지까지 함께 제거하는 실습 정리 모드입니다."
+  type        = bool
+  default     = false
 }
 output "cluster_name" { value = aws_eks_cluster.main.name }
 output "queue_url" { value = aws_sqs_queue.worker.url }

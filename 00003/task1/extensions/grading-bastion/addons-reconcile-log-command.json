@@ -1,0 +1,5 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {"commands": ["tail -n 120 /tmp/addons-reconcile.log"]}
+}

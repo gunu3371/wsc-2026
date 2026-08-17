@@ -7,7 +7,7 @@ resource "aws_vpc" "main" {
   cidr_block           = "10.51.0.0/16"
   enable_dns_support   = true
   enable_dns_hostnames = true
-  tags = { Name = "skills-nosql-vpc" }
+  tags                 = { Name = "skills-nosql-vpc" }
 }
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
@@ -24,13 +24,13 @@ resource "aws_subnet" "db_a" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.51.11.0/24"
   availability_zone = "ap-northeast-2a"
-  tags               = { Name = "skills-nosql-db-private-subnet-a" }
+  tags              = { Name = "skills-nosql-db-private-subnet-a" }
 }
 resource "aws_subnet" "db_b" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = "10.51.12.0/24"
   availability_zone = "ap-northeast-2b"
-  tags               = { Name = "skills-nosql-db-private-subnet-b" }
+  tags              = { Name = "skills-nosql-db-private-subnet-b" }
 }
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
@@ -77,7 +77,7 @@ resource "aws_security_group" "docdb" {
 resource "aws_kms_key" "docdb" {
   description             = "skills-nosql DocumentDB encryption"
   enable_key_rotation     = true
-  deletion_window_in_days = 30
+  deletion_window_in_days = var.cleanup_mode ? 7 : 30
   tags                    = { Name = "skills-nosql-docdb" }
 }
 resource "aws_kms_alias" "docdb" {
@@ -113,7 +113,7 @@ resource "aws_docdb_cluster" "main" {
   vpc_security_group_ids          = [aws_security_group.docdb.id]
   storage_encrypted               = true
   kms_key_id                      = aws_kms_key.docdb.arn
-  skip_final_snapshot             = var.skip_final_snapshot
+  skip_final_snapshot             = var.cleanup_mode || var.skip_final_snapshot
   enabled_cloudwatch_logs_exports = ["audit", "profiler"]
   tags                            = { Name = "skills-nosql-docdb-cluster" }
 }
@@ -128,7 +128,7 @@ resource "aws_docdb_cluster_instance" "main" {
 resource "aws_secretsmanager_secret" "docdb" {
   name                    = "skills-nosql-docdb-secret"
   kms_key_id              = aws_kms_key.docdb.arn
-  recovery_window_in_days = 30
+  recovery_window_in_days = var.cleanup_mode ? 0 : 30
   tags                    = { Name = "skills-nosql-docdb-secret" }
 }
 resource "aws_secretsmanager_secret_version" "docdb" {
@@ -183,10 +183,11 @@ resource "aws_instance" "client" {
   vpc_security_group_ids      = [aws_security_group.client.id]
   iam_instance_profile        = aws_iam_instance_profile.client.name
   user_data_replace_on_change = true
-  user_data = templatefile("${path.module}/user-data.sh.tftpl", {
+  # EC2 user-data has a 16 KiB API limit; cloud-init transparently expands gzip input.
+  user_data_base64 = base64gzip(templatefile("${path.module}/user-data.sh.tftpl", {
     client_source = base64encode(file("${path.module}/assets/docdb_client.py"))
     dataset       = base64encode(file("${path.module}/assets/retail_dataset.json"))
-  })
+  }))
   metadata_options {
     http_endpoint = "enabled"
     http_tokens   = "required"
@@ -195,7 +196,7 @@ resource "aws_instance" "client" {
     encrypted   = true
     volume_type = "gp3"
   }
-  tags = { Name = "skills-nosql-client-ec2" }
+  tags       = { Name = "skills-nosql-client-ec2" }
   depends_on = [aws_docdb_cluster_instance.main, aws_secretsmanager_secret_version.docdb]
 }
 
@@ -206,6 +207,11 @@ variable "client_allowed_cidrs" {
 variable "skip_final_snapshot" {
   type    = bool
   default = false
+}
+variable "cleanup_mode" {
+  description = "실습 리소스 정리 시 최종 스냅샷과 비밀 복구 대기를 생략하고 KMS 삭제 예약을 7일로 단축합니다."
+  type        = bool
+  default     = false
 }
 output "client_public_ip" { value = aws_instance.client.public_ip }
 output "docdb_endpoint" { value = aws_docdb_cluster.main.endpoint }

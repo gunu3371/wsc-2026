@@ -1,0 +1,42 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {"type":"row","title":"Node","gridPos":{"h":1,"w":24,"x":0,"y":0}},
+    {"type":"timeseries","title":"All Node CPU","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum by (instance) (rate(node_cpu_seconds_total{mode!=\"idle\"}[5m])) / sum by (instance) (rate(node_cpu_seconds_total[5m]))"}],"fieldConfig":{"defaults":{"unit":"percentunit","thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":0.6},{"color":"red","value":0.8}]}}},"gridPos":{"h":8,"w":8,"x":0,"y":1}},
+    {"type":"timeseries","title":"All Node Memory","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes"}],"fieldConfig":{"defaults":{"unit":"percentunit"}},"gridPos":{"h":8,"w":8,"x":8,"y":1}},
+    {"type":"stat","title":"All Available Nodes","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})"}],"gridPos":{"h":8,"w":8,"x":16,"y":1}},
+
+    {"type":"row","title":"Pod","gridPos":{"h":1,"w":24,"x":0,"y":9}},
+    {"type":"timeseries","title":"All Pod CPU","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=~\"$namespace\",container!=\"\"}[5m]))"}],"gridPos":{"h":8,"w":6,"x":0,"y":10}},
+    {"type":"timeseries","title":"All Pod Memory","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum by (pod) (container_memory_working_set_bytes{namespace=~\"$namespace\",container!=\"\"})"}],"fieldConfig":{"defaults":{"unit":"bytes"}},"gridPos":{"h":8,"w":6,"x":6,"y":10}},
+    {"type":"stat","title":"All Pending Pods","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum(kube_pod_status_phase{namespace=~\"$namespace\",phase=\"Pending\"})"}],"gridPos":{"h":8,"w":6,"x":12,"y":10}},
+    {"type":"stat","title":"All Pod restarts","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum(kube_pod_container_status_restarts_total{namespace=~\"$namespace\"})"}],"fieldConfig":{"defaults":{"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"red","value":1}]}}},"gridPos":{"h":8,"w":6,"x":18,"y":10}},
+
+    {"type":"row","title":"Application Pod","gridPos":{"h":1,"w":24,"x":0,"y":18}},
+    {"type":"timeseries","title":"App Pod CPU","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"wsc2026\",pod=~\"wsc2026-book-deploy-.*\",container!=\"\"}[5m])) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"wsc2026\",pod=~\"wsc2026-book-deploy-.*\",resource=\"cpu\"})"}],"fieldConfig":{"defaults":{"unit":"percentunit","thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":0.6},{"color":"red","value":0.8}]}}},"gridPos":{"h":8,"w":5,"x":0,"y":19}},
+    {"type":"timeseries","title":"App Pod Memory","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum by (pod) (container_memory_working_set_bytes{namespace=\"wsc2026\",pod=~\"wsc2026-book-deploy-.*\",container!=\"\"})"}],"fieldConfig":{"defaults":{"unit":"bytes"}},"gridPos":{"h":8,"w":5,"x":5,"y":19}},
+    {"type":"stat","title":"App Running","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum(kube_pod_status_phase{namespace=\"wsc2026\",pod=~\"wsc2026-book-deploy-.*\",phase=\"Running\"})"}],"gridPos":{"h":8,"w":4,"x":10,"y":19}},
+    {"type":"stat","title":"App restarts","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum(kube_pod_container_status_restarts_total{namespace=\"wsc2026\",pod=~\"wsc2026-book-deploy-.*\"})"}],"fieldConfig":{"defaults":{"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"red","value":1}]}}},"gridPos":{"h":8,"w":5,"x":14,"y":19}},
+    {"type":"stat","title":"App Pending","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum(kube_pod_status_phase{namespace=\"wsc2026\",pod=~\"wsc2026-book-deploy-.*\",phase=\"Pending\"})"}],"gridPos":{"h":8,"w":5,"x":19,"y":19}},
+
+    {"type":"row","title":"Application Traffic","gridPos":{"h":1,"w":24,"x":0,"y":28}},
+    {"type":"timeseries","title":"App Request Count","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum(rate(log_metric_counter_http_requests_total[5m]))"}],"gridPos":{"h":8,"w":6,"x":0,"y":29}},
+    {"type":"timeseries","title":"App Response Time","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum(rate(log_metric_histogram_http_request_duration_seconds_sum[5m])) / clamp_min(sum(rate(log_metric_histogram_http_request_duration_seconds_count[5m])), 0.001)"}],"fieldConfig":{"defaults":{"unit":"s"}},"gridPos":{"h":8,"w":6,"x":6,"y":29}},
+    {"type":"timeseries","title":"App Status Code","datasource":{"type":"prometheus","uid":"prometheus"},"targets":[{"refId":"A","expr":"sum by (status) (rate(log_metric_counter_http_requests_total[5m]))","legendFormat":"{{status}}"}],"gridPos":{"h":8,"w":6,"x":12,"y":29}},
+    {"type":"logs","title":"App Application Logs","datasource":{"type":"cloudwatch","uid":"cloudwatch"},"targets":[{"refId":"A","datasource":{"type":"cloudwatch","uid":"cloudwatch"},"queryMode":"Logs","region":"${region}","expression":"fields @timestamp, @message | filter @message not like /health/ | sort @timestamp desc","logGroups":[{"arn":"arn:${partition}:logs:${region}:${account_id}:log-group:/wsc2026/book:*","name":"/wsc2026/book"}]}],"gridPos":{"h":8,"w":6,"x":18,"y":29}},
+
+    {"type":"row","title":"Alert","gridPos":{"h":1,"w":24,"x":0,"y":38}},
+    {"type":"alertlist","title":"Active Alerts","options":{"alertInstanceLabelFilter":"","alertName":"","dashboardAlerts":false,"folder":{"id":0,"title":"General"},"groupBy":["alertname"],"groupMode":"default","maxItems":20,"sortOrder":1,"stateFilter":{"alerting":true,"error":true,"noData":true,"normal":false,"pending":true}},"gridPos":{"h":8,"w":24,"x":0,"y":39}}
+  ],
+  "schemaVersion": 39,
+  "tags": ["wsc2026"],
+  "templating": {"list":[
+    {"name":"namespace","type":"query","datasource":{"type":"prometheus","uid":"prometheus"},"query":"label_values(kube_pod_info, namespace)","includeAll":true,"allValue":".*","current":{"text":"All","value":"$__all"}},
+    {"name":"nodegroup","type":"query","datasource":{"type":"prometheus","uid":"prometheus"},"query":"label_values(kube_node_labels, label_eks_amazonaws_com_nodegroup)","includeAll":true,"allValue":".*","current":{"text":"All","value":"$__all"}}
+  ]},
+  "time":{"from":"now-6h","to":"now"},
+  "title":"wsc2026-grafana-dashboard",
+  "uid":"wsc2026"
+}

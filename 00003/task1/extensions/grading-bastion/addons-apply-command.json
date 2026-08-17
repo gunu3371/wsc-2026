@@ -1,0 +1,15 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "dnf install -y unzip",
+      "curl -fsSL -o /tmp/terraform.zip https://releases.hashicorp.com/terraform/1.15.8/terraform_1.15.8_linux_amd64.zip",
+      "unzip -o /tmp/terraform.zip -d /usr/local/bin",
+      "mkdir -p /opt/wsc2026-addons",
+      "aws s3 cp s3://wsc2026-static-pvdx-00003-bucket/grading/addons.zip /tmp/addons.zip",
+      "unzip -o /tmp/addons.zip -d /opt/wsc2026-addons",
+      "cd /opt/wsc2026-addons && terraform init -input=false -no-color > /tmp/addons-apply.log 2>&1 && terraform import -input=false -no-color -var='cluster_name=wsc2026-eks-cluster' -var='table_name=wsc2026-book-table' -var='vpc_id=vpc-0eee82370521da1d7' -var='private_subnet_ids=[\"subnet-0d011da742a116fe1\",\"subnet-0519d660a34424065\"]' -var='image_uri=969283154659.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr@sha256:88bb1de474e33587f4ade852304e89adeb0db5035a80b065d1a59606974efa93' helm_release.prometheus observability/wsc2026-prometheus >> /tmp/addons-apply.log 2>&1 || true; terraform apply -input=false -auto-approve -no-color -var='cluster_name=wsc2026-eks-cluster' -var='table_name=wsc2026-book-table' -var='vpc_id=vpc-0eee82370521da1d7' -var='private_subnet_ids=[\"subnet-0d011da742a116fe1\",\"subnet-0519d660a34424065\"]' -var='image_uri=969283154659.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr@sha256:88bb1de474e33587f4ade852304e89adeb0db5035a80b065d1a59606974efa93' >> /tmp/addons-apply.log 2>&1"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "cd /opt/wsc2026-addons && terraform apply -input=false -auto-approve -no-color -var='cluster_name=wsc2026-eks-cluster' -var='table_name=wsc2026-book-table' -var='vpc_id=vpc-0eee82370521da1d7' -var='private_subnet_ids=[\"subnet-0d011da742a116fe1\",\"subnet-0519d660a34424065\"]' -var='image_uri=969283154659.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr@sha256:88bb1de474e33587f4ade852304e89adeb0db5035a80b065d1a59606974efa93' > /tmp/addons-final-apply.log 2>&1"
+    ]
+  }
+}

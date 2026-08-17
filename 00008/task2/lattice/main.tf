@@ -197,7 +197,7 @@ resource "aws_instance" "client" {
     http_tokens   = "required"
   }
   root_block_device { encrypted = true }
-  tags = { Name = "skills-lattice-client-ec2" }
+  tags       = { Name = "skills-lattice-client-ec2" }
   depends_on = [aws_vpclattice_service_network_vpc_association.client, aws_vpclattice_listener.http]
 }
 

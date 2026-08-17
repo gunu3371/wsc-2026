@@ -1,0 +1,11 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-0e39df9ee4bbcaf04"],
+  "Parameters": {
+    "commands": [
+      "cd /opt/wsc2026-addons && terraform state list 2>/dev/null || true",
+      "KUBECONFIG=/tmp/wsc2026-kubeconfig kubectl get namespace observability wsc2026 --ignore-not-found",
+      "KUBECONFIG=/tmp/wsc2026-kubeconfig helm list -A"
+    ]
+  }
+}

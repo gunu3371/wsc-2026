@@ -1,2 +1,3 @@
-# 실습 종료 시 버킷을 함께 비울지 결정한다.
+# 실습 종료 후 버킷 내용을 함께 비울지 결정한다.
 force_destroy = false
+cleanup_mode  = false

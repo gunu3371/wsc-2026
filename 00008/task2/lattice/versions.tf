@@ -4,5 +4,14 @@ terraform {
     aws = { source = "hashicorp/aws", version = "~> 6.0" }
   }
 }
-provider "aws" { region = "ap-northeast-1" }
+provider "aws" {
+  region = "ap-northeast-1"
+  default_tags {
+    tags = {
+      Project     = "national-skills-2026"
+      CandidateId = "00008"
+      ManagedBy   = "Terraform"
+    }
+  }
+}
 

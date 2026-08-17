@@ -5,5 +5,14 @@ terraform {
     random = { source = "hashicorp/random", version = "~> 3.7" }
   }
 }
-provider "aws" { region = "ap-northeast-2" }
+provider "aws" {
+  region = "ap-northeast-2"
+  default_tags {
+    tags = {
+      Project     = "national-skills-2026"
+      CandidateId = "00008"
+      ManagedBy   = "Terraform"
+    }
+  }
+}
 
