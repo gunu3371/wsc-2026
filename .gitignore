@@ -3,6 +3,8 @@
 *.tfstate
 *.tfstate.*
 *.tfplan
+**/terraform.tfvars
+**/*.auto.tfvars
 
 # Generated Lambda archive for 00003
 00003/task1/platform/book_get.zip

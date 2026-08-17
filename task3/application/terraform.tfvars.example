@@ -1,0 +1,9 @@
+candidate_id = "00000"
+
+# Copy these three values from `terraform output` in ../foundation.
+database_secret_arn = "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:apdev-task3/database-example"
+image_bucket_name   = "apdev-task3-images-00000-123456789012"
+product_pod_role_arn = "arn:aws:iam::123456789012:role/apdev-task3-product"
+
+# Images are read from the three ECR repositories created by foundation.
+image_tag = "latest"
