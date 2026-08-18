@@ -1,6 +1,6 @@
 data "archive_file" "remediation" {
   type        = "zip"
-  source_file = "${path.module}/lambda/index.py"
+  source_file = "${path.module}/../assets/cloud-event/lambda/index.py"
   output_path = "${path.module}/remediation.zip"
 }
 resource "aws_iam_role" "lambda" {
@@ -52,4 +52,3 @@ resource "aws_lambda_function" "fn" {
     }
   }
 }
-

@@ -22,9 +22,8 @@ resource "aws_s3_bucket_notification" "trigger" {
 resource "aws_s3_object" "test_csv" {
   bucket       = aws_s3_bucket.this.id
   key          = "input/test.csv"
-  source       = "${path.module}/assets/test.csv"
-  etag         = filemd5("${path.module}/assets/test.csv")
+  source       = "${path.module}/../assets/workflow/test.csv"
+  etag         = filemd5("${path.module}/../assets/workflow/test.csv")
   content_type = "text/csv"
   depends_on   = [aws_s3_bucket_notification.trigger]
 }
-

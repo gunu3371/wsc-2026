@@ -1,10 +1,10 @@
 # 클라우드컴퓨팅 과제 Terraform 작업 지침
 
-이 파일은 저장소 루트 아래의 응시번호별 과제(`00002`, `00003`, `00007`, `00008` 등)를 Terraform으로 구현·검증·채점·정리할 때 공통으로 적용한다. 특정 과제의 리소스 이름이나 아키텍처를 다른 과제에 그대로 복사하지 말고, 항상 해당 응시번호의 최신 원본 문제지, 공식 오류 정정과 채점 자료를 기준으로 작업한다. `docs/2026-07-31 직종협의회.md`의 협의 내용을 운영 참고사항으로 함께 사용하되, 이후 배포된 공식 공지와 정정 자료가 우선한다.
+이 파일은 저장소 루트 아래의 과제번호별 과제(`00002`, `00003`, `00007`, `00008` 등)를 Terraform으로 구현·검증·채점·정리할 때 공통으로 적용한다. 특정 과제의 리소스 이름이나 아키텍처를 다른 과제에 그대로 복사하지 말고, 항상 해당 과제번호의 최신 원본 문제지, 공식 오류 정정과 채점 자료를 기준으로 작업한다. `docs/2026-07-31 직종협의회.md`의 협의 내용을 운영 참고사항으로 함께 사용하되, 이후 배포된 공식 공지와 정정 자료가 우선한다.
 
 ## 1. 기준 자료와 작업 범위
 
-1. 작업 대상이 `<응시번호>`라면 먼저 `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-<응시번호>/` 아래와 저장소의 `docs/`를 조사한다.
+1. 작업 대상이 `<과제번호>`라면 먼저 `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-<과제번호>/` 아래와 저장소의 `docs/`를 조사한다.
 2. 같은 과제의 파일이 여러 버전이면 날짜, 버전, 최종본 안내를 확인하고 가장 최신인 자료를 선택한다. 저장소 수집일, 최종본 안내의 기준일, 공식 게시물 수정일, 마지막 첨부 댓글의 작성일을 서로 다른 값으로 구분하며, 저장소에 최근 추가되었다는 이유만으로 원본도 최신이라고 판단하지 않는다.
 3. 요구사항의 우선순위는 다음과 같다.
    1. 마이스터넷 등 공식 채널에 게시된 오류 정정과 변경 공지
@@ -12,7 +12,7 @@
    3. 최신 채점 기준 PDF와 채점 스크립트
    4. 공식 배포 파일과 안내 문서
    5. HWP/HWPX 자료
-   6. 직종협의회 메모와 다른 응시번호 구현
+   6. 직종협의회 메모와 다른 과제번호 구현
 4. PDF의 단계, 리전, CIDR, 리소스 이름, 버전, 런타임, 암호화, 태그, 입출력 경로를 빠짐없이 표로 정리한 뒤 구현한다.
 5. 문제지와 채점 스크립트가 다르면 실제 채점에 영향을 주는 요구사항을 가능한 범위에서 함께 만족시킨다. 서로 충돌하거나 문제지 밖의 추가 요구로 보이면 임의로 공식 파일을 고치지 말고 오류 후보로 기록한다.
 6. 오류 후보는 `상태`, `페이지/문항`, `현재 문구`, `오류라고 판단한 이유`, `제안 변경 문구`, `영향받는 채점 항목` 형식의 별도 텍스트 또는 Markdown 문서로 정리한다. 문서 머리에는 재확인일, 대조한 원본의 버전·날짜, 공식 채널 확인 범위와 확인하지 못한 범위를 기록한다. 상태는 최소한 `미확인`, `유지`, `해소`를 구분하고, 단순 명세 모호성·문서 간 명확한 충돌·채점에 영향 없는 오타를 같은 수준의 확정 오류로 표현하지 않는다. 출제 의도를 추측해 원본 PDF, 채점표 또는 배포 파일을 직접 수정하지 않는다.
@@ -22,60 +22,58 @@
 10. 공식 정정으로 오류 후보가 해소되어도 즉시 행을 삭제하지 않는다. 먼저 `해소(정정일·정정 문구·첨부명)` 상태로 기록하고, 새 전체교체본을 저장소에 반영한 뒤 문제지·채점기준·채점 스크립트가 실제로 일치하는지 재검증한 후 제거한다. 새 원본을 반영하면 요구사항 대조표, 구현, README와 모든 관련 root module 검증도 다시 수행한다.
 11. 공식 배포 파일은 가능한 한 그대로 재사용한다. 바이너리, 이미지, 샘플 데이터, Lambda 코드의 내용을 임의로 대체하지 않는다.
 12. 배포된 추가 Markdown이나 바이너리 실행 안내가 문제지 범위를 넘어서는 경우 숨은 요구사항으로 단정하지 말고, 문제지·채점표·공식 정정에서 근거를 찾아 오류 후보로 기록한다.
-13. 다른 응시번호 폴더는 패턴 참고용으로만 읽을 수 있다. 대상 과제의 고정 이름, 리전, 계정별 값 또는 네트워크 구성을 다른 과제에서 가져오지 않는다.
+13. 다른 과제번호 폴더는 패턴 참고용으로만 읽을 수 있다. 대상 과제의 고정 이름, 리전, 계정별 값 또는 네트워크 구성을 다른 과제에서 가져오지 않는다.
 
 ## 2. 디렉터리와 Terraform 파일 구성
 
-- 결과물은 저장소 루트의 `<응시번호>/task1`, `<응시번호>/task2`, 필요한 경우 `<응시번호>/task3` 아래에 둔다.
+- 결과물은 저장소 루트의 `task1/<과제번호>`, `task2/<과제번호>` 아래에 둔다. `task3`는 과제가 하나뿐인 공통 과제이므로 과제번호 하위 디렉터리를 만들지 않고 `task3/`를 root module 경계로 사용한다. 여기서 `taskN`은 과제 구분이고 `<과제번호>`는 대회에서 사용될 수 있는 출제 과제 식별자다.
 - `.tf` 파일을 단계별로 나누는 것만으로는 state나 적용 단위가 분리되지 않는다. 추가 과제 대응을 위해 **단계별 파일 분리 + 수명주기별 root module/state 분리 + 독립 extension 분리**를 함께 사용한다.
 - `foundation`에는 VPC, IAM, KMS, EKS처럼 여러 단계가 공유하고 변경 비용이 큰 기반 리소스를 둔다.
 - `application`에는 원래 과제의 워크로드, 서비스, 데이터 처리 코드를 둔다.
 - `extensions/<추가과제명>`에는 모니터링, 추가 Lambda, 보안 대응 등 기존 과제와 독립적으로 추가·삭제할 수 있는 요구사항을 둔다.
 - `grading-bastion`은 필요한 경우에만 만드는 extension이며 다른 애플리케이션 리소스와 state를 공유하지 않는다.
 - 모든 과제 단계를 별도 state로 만들지는 않는다. 함께 생성·변경·삭제되는 리소스는 같은 root module에 두고, 수명주기·권한·provider 접근 방식이 다른 경계에서만 state를 분리한다.
-- 두 곳 이상에서 반복되고 인터페이스가 안정된 구성만 `<응시번호>/modules/`의 재사용 모듈로 추출한다. security group rule 하나처럼 작은 리소스까지 과도하게 모듈화하지 않는다.
-- 각 root module 안에서는 과제지의 단계마다 번호가 붙은 개별 `.tf` 파일을 계속 사용한다.
+- 두 곳 이상에서 반복되고 인터페이스가 안정된 구성만 `taskN/<과제번호>/modules/`의 재사용 모듈로 추출한다. security group rule 하나처럼 작은 리소스까지 과도하게 모듈화하지 않는다.
+- 각 root module 안에서는 `00-common.tf`, `versions.tf`, `variables.tf`, `outputs.tf`를 분리하고, 과제지의 단계마다 번호가 붙은 개별 `.tf` 파일을 사용한다. 신규 root module에 `main.tf` 하나로 provider·변수·data source·리소스·output을 함께 두지 않는다.
 - 새 과제의 권장 형식은 다음과 같다.
 
 ```text
-<응시번호>/
-├── README.md
-├── modules/                         # 선택: 재사용 가치가 있는 내부 모듈
-│   ├── network/
-│   ├── eks/
-│   ├── monitoring/
-│   └── grading-bastion/
-├── task1/
-│   ├── foundation/                  # 독립 root module/state
-│   │   ├── 00-common.tf
-│   │   ├── 01-network.tf
-│   │   ├── 02-cluster.tf
-│   │   ├── versions.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   ├── application/                 # 독립 root module/state
-│   │   ├── 01-workload.tf
-│   │   ├── 02-service.tf
-│   │   ├── variables.tf
-│   │   └── outputs.tf
-│   └── extensions/
-│       ├── monitoring/              # 추가 과제별 독립 root module/state
-│       ├── extra-lambda/
-│       └── grading-bastion/
-├── task2/
-│   ├── <module-a>/                  # 자체 foundation/application/extensions 가능
-│   └── <module-b>/
-└── task3/                           # 3과제가 제공되는 경우 같은 패턴 적용
+taskN/
+└── <과제번호>/
+    ├── README.md
+    ├── modules/                     # 선택: 재사용 가치가 있는 내부 모듈
+    │   ├── network/
+    │   ├── eks/
+    │   ├── monitoring/
+    │   └── grading-bastion/
+    ├── foundation/                  # 독립 root module/state
+    │   ├── 00-common.tf
+    │   ├── 01-network.tf
+    │   ├── 02-cluster.tf
+    │   ├── versions.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── application/                 # 독립 root module/state
+    │   ├── 01-workload.tf
+    │   ├── 02-service.tf
+    │   ├── variables.tf
+    │   └── outputs.tf
+    └── extensions/
+        ├── monitoring/              # 추가 과제별 독립 root module/state
+        ├── extra-lambda/
+        └── grading-bastion/
 ```
+
+`task2/<과제번호>/`처럼 독립 서비스가 여럿인 과제는 위의 `foundation`·`application` 대신 `<module-a>/`, `<module-b>/`를 둘 수 있으며, 각 모듈은 자체적인 foundation/application/extensions 경계를 가질 수 있다. 단일 공통 과제인 `task3/`는 과제번호 디렉터리 없이 이 원칙을 적용한다.
 
 - `00-common.tf`에는 계정·리전 data source, 공통 locals 등만 둔다.
 - `versions.tf`에는 Terraform/provider 버전과 provider 설정을 둔다.
 - `variables.tf`와 `outputs.tf`에는 각각 입력과 출력만 둔다.
-- Lambda 소스, 웹 자산, 컨테이너 파일, 사용자 데이터는 `lambda/`, `assets/`, `*.tftpl` 등으로 분리한다.
+- Terraform이 읽는 Lambda 소스, 웹 자산, 컨테이너 파일, 사용자 데이터, 테스트 데이터와 템플릿은 과제 루트의 `assets/` 아래에 둔다. 기본 경로는 `task1/<과제번호>/assets/<root-module-경로>/...`, `task2/<과제번호>/assets/<root-module-경로>/...`, `task3/assets/<root-module-경로>/...`이며, 여러 root module이 공유하는 자산만 `assets/shared/`에 둔다. Lambda ZIP처럼 Terraform 실행 중 생성되는 산출물은 `assets/`에 넣지 않는다.
 - 파일 분리는 가독성을 위한 것이며 같은 디렉터리의 모든 `.tf`는 하나의 root module로 함께 평가된다는 점을 README에 명시한다.
-- root module 사이에는 필요한 최소 값만 전달한다. `foundation`은 `vpc_id`, subnet IDs, cluster name, endpoint 등 안정적인 output 계약을 제공하고, `application`과 `extensions`는 이를 입력 변수로 받는다.
+- root module 사이에는 필요한 최소 값만 전달한다. `foundation`은 `vpc_id`, subnet IDs, cluster name, endpoint 등 안정적인 output 계약을 제공하고, `application`과 `extensions`는 이를 입력 변수로 받는다. 소비 module의 `terraform.tfvars.example`에는 필요한 입력의 안전한 placeholder와 값을 얻을 foundation/infra output 이름을 함께 설명한다.
 - `modules/` 아래 child module에는 backend를 선언하지 않고 provider configuration도 가급적 두지 않는다. provider와 backend의 소유권은 이를 호출하는 root module에 둔다.
-- backend와 state 위치가 안정적으로 관리될 때만 `terraform_remote_state`를 사용한다. 그렇지 않으면 명시적 변수나 고정 이름/태그를 이용한 AWS data source를 사용하고, 상대 경로의 로컬 state에 과도하게 결합하지 않는다.
+- backend와 state 위치가 안정적으로 관리될 때만 `terraform_remote_state`를 사용한다. 이 저장소의 root module 사이에서는 `backend = "local"` 또는 상대 경로(`../.../terraform.tfstate`)를 이용한 `terraform_remote_state`를 사용하지 않는다. 필요한 foundation/infra output은 소비 module의 명시적 변수로 전달하고, endpoint·CA처럼 AWS API에서 조회 가능한 값은 AWS data source를 함께 사용한다.
 - extension은 기존 리소스의 소유권을 가져가거나 동일 리소스를 중복 선언하지 않는다. 추가 리소스와 필요한 연결만 소유하여 extension 단독 `plan`, `apply`, `destroy`가 가능해야 한다.
 - 추가 과제를 기존 root module의 여러 `enable_*` 조건으로 누적하기보다 독립 extension을 우선한다. 기존 리소스와 반드시 원자적으로 생성·삭제되어야 할 때만 feature flag를 사용한다.
 - 이미 apply된 기존 과제를 구조 정리만을 위해 이동하지 않는다. 추가 과제는 먼저 `extensions/`로 붙인다. 실제 리소스 주소를 옮겨야 한다면 `moved` block 또는 검증된 `terraform state mv` 계획을 사용하고, plan에서 불필요한 destroy/create가 0건인지 확인한다.
@@ -85,9 +83,9 @@
 
 - 리소스 이름, 리전, CIDR, AZ 수, 포트, 경로, 태그는 문제지 및 채점 스크립트의 정확한 값을 따른다.
 - 계정 ID, 현재 파티션, caller ARN처럼 실행 환경에 따라 달라지는 값은 data source로 구한다.
-- 응시번호가 이름에 들어가는 경우 `candidate_id` 같은 변수로 만들고 기본값 또는 예시는 대상 번호와 일치시킨다.
-- S3처럼 전역 고유 이름이 필요한 리소스는 문제의 명명 규칙을 해치지 않는 범위에서만 계정 ID나 응시번호를 사용한다.
-- 모든 리소스에 가능한 한 과제 식별 태그를 공통 적용한다. 예: `Project`, `CandidateId`, `ManagedBy = "Terraform"`. 정리 시 이 태그를 사용한다.
+- 과제번호가 이름에 들어가는 경우 `task_id` 같은 변수로 만들고 기본값 또는 예시는 대상 번호와 일치시킨다.
+- S3처럼 전역 고유 이름이 필요한 리소스는 문제의 명명 규칙을 해치지 않는 범위에서만 계정 ID나 과제번호를 사용한다.
+- 모든 리소스에 가능한 한 과제 식별 태그를 공통 적용한다. 예: `Project`, `TaskId`, `ManagedBy = "Terraform"`. 정리 시 이 태그를 사용한다.
 - provider가 지원하는 수명주기와 종속성을 명시적으로 구성한다. 단순히 `depends_on`을 남발하지 않는다.
 - 삭제 시 내용이 생기는 실습용 S3 버킷은 요구사항에 반하지 않는다면 `force_destroy = true`를 고려한다. CloudTrail이나 애플리케이션이 계속 쓰는 버킷은 생산자를 먼저 중지한 뒤 비운다.
 - EKS/Kubernetes/Helm처럼 클러스터 API 접근이 필요한 리소스는 기반 AWS 인프라와 별도 root module로 분리한다. 삭제는 애드온/워크로드 모듈부터 역순으로 수행한다.
@@ -100,7 +98,7 @@
 
 ## 4. README 작성 기준
 
-각 `<응시번호>/README.md`는 UTF-8 한국어로 작성하며 최소한 다음을 포함한다.
+각 `task1/<과제번호>/README.md`와 `task2/<과제번호>/README.md`, 그리고 단일 공통 과제의 `task3/README.md`는 UTF-8 한국어로 작성하며 최소한 다음을 포함한다.
 
 - 사용한 원본 문제지와 채점 자료의 상대 경로
 - task와 모듈별 디렉터리 구조
@@ -136,7 +134,7 @@ terraform plan -input=false
 - 모든 root module의 plan이 성공할 때까지 실제 AWS에 적용하지 않는다.
 - 검증 순서는 `foundation → application → extensions`로 하며, extension마다 독립적으로 plan이 성공하는지 확인한다.
 - 사용자가 “plan까지만” 요청한 경우 `apply`, AWS CLI 생성/변경 명령, 채점 스크립트 실행은 하지 않는다.
-- plan 결과에서 예상치 못한 삭제, 다른 응시번호 리소스, 기본 VPC 변경, 과도하게 넓은 IAM 권한을 검토한다.
+- plan 결과에서 예상치 못한 삭제, 다른 과제번호 리소스, 기본 VPC 변경, 과도하게 넓은 IAM 권한을 검토한다.
 
 ## 6. AWS 적용 원칙
 
@@ -150,7 +148,7 @@ terraform plan -input=false
 
 ## 7. 채점 스크립트 실행과 과제 구현 수정 반복
 
-1. 대상 응시번호와 과제 번호에 정확히 대응하는 채점 스크립트를 찾는다.
+1. 대상 과제번호와 task1/task2 구분에 정확히 대응하는 채점 스크립트를 찾는다.
 2. 스크립트를 읽어 필요한 셸, AWS profile/region, `jq`, `kubectl` 등의 전제 조건과 파괴적 명령 유무를 먼저 확인한다.
 3. 채점 스크립트, 특히 Kubernetes 채점은 원칙적으로 AWS CloudShell에서 실행한다. 스크립트와 필요한 배포 파일을 CloudShell로 옮기고, 대상 AWS 계정과 리전이 맞는지 `aws sts get-caller-identity` 및 AWS CLI 설정으로 확인한 뒤 실행한다.
 4. EKS는 채점 시 CloudShell에서 별도의 추가 설정 없이 접근할 수 있도록 미리 구성한다. 문제지가 특정 방식을 요구하지 않으면 IRSA, `aws-auth` ConfigMap, Pod Identity, EKS Access Entry 중 하나를 채점 정답처럼 강제하지 말고 실제 `aws eks update-kubeconfig`와 `kubectl` 접근 성공 여부를 우선한다.
@@ -184,7 +182,7 @@ terraform plan -input=false
 
 ## 8. 리소스 정리 절차
 
-정리는 대상 응시번호와 이번 작업에서 생성한 리소스로만 제한한다. 이름 또는 태그가 불명확한 리소스는 삭제하지 않는다.
+정리는 대상 과제번호와 이번 작업에서 생성한 리소스로만 제한한다. 이름 또는 태그가 불명확한 리소스는 삭제하지 않는다.
 
 1. 새 데이터를 계속 생성하는 producer, CloudTrail, 이벤트 소스, 애플리케이션을 먼저 중지한다.
 2. EKS 내부 리소스, Helm release, Kubernetes Service/Ingress 등 외부 AWS 리소스를 만드는 항목을 먼저 destroy한다.
@@ -210,7 +208,7 @@ Resource Groups Tagging API는 삭제된 EC2/NAT/EBS ARN을 잠시 반환할 수
 ## 9. 안전과 완료 보고
 
 - AWS 계정 전체를 포괄하는 이름 없는 일괄 삭제를 하지 않는다.
-- 기본 VPC, 다른 응시번호, 다른 프로젝트 또는 사용자가 만든 리소스는 건드리지 않는다.
+- 기본 VPC, 다른 과제번호, 다른 프로젝트 또는 사용자가 만든 리소스는 건드리지 않는다.
 - 삭제 전에는 계정 ID, 리전, 리소스 ID, 이름, 태그를 확인한다.
 - 로컬 `.tf` 소스와 README는 리소스 정리 대상이 아니다. 사용자가 명시적으로 요청하지 않는 한 삭제하지 않는다.
 - 완료 보고에는 다음을 간결하게 포함한다.
@@ -223,7 +221,7 @@ Resource Groups Tagging API는 삭제된 EC2/NAT/EBS ARN을 잠시 반환할 수
 
 ## 10. 작업 체크리스트
 
-- [ ] 대상 응시번호의 문제지·채점지·채점 스크립트를 확인했다.
+- [ ] 대상 과제번호의 문제지·채점지·채점 스크립트를 확인했다.
 - [ ] 최신 공식 오류 정정과 `docs/`의 협의회 참고사항을 확인했다.
 - [ ] 저장소 수집일, 공식 게시물 수정일과 마지막 첨부 댓글의 날짜를 구분해 최신 원본을 판정했다.
 - [ ] 로그인 전용 공식 자료의 확인 여부와 접근 제한을 기록했다.

@@ -17,14 +17,14 @@ provider "aws" {
   profile = var.aws_profile
 }
 provider "kubernetes" {
-  host                   = data.terraform_remote_state.infra.outputs.cluster_endpoint
-  cluster_ca_certificate = base64decode(data.terraform_remote_state.infra.outputs.cluster_ca)
+  host                   = var.cluster_endpoint
+  cluster_ca_certificate = base64decode(var.cluster_ca)
   token                  = data.aws_eks_cluster_auth.main.token
 }
 provider "helm" {
   kubernetes {
-    host                   = data.terraform_remote_state.infra.outputs.cluster_endpoint
-    cluster_ca_certificate = base64decode(data.terraform_remote_state.infra.outputs.cluster_ca)
+    host                   = var.cluster_endpoint
+    cluster_ca_certificate = base64decode(var.cluster_ca)
     token                  = data.aws_eks_cluster_auth.main.token
   }
 }

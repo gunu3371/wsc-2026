@@ -1,34 +1,3 @@
-terraform {
-
-  required_version = ">= 1.6.0"
-  required_providers {
-    aws = {
-      source = "hashicorp/aws", version = "~> 6.0"
-    }
-  }
-
-}
-provider "aws" {
-  region = "ap-northeast-2"
-}
-variable "foundation_state_path" {
-  type    = string
-  default = "../foundation/terraform.tfstate"
-}
-variable "kubernetes_version" {
-  type    = string
-  default = "1.35"
-}
-data "terraform_remote_state" "foundation" {
-  backend = "local"
-  config = {
-    path = var.foundation_state_path
-  }
-}
-data "aws_partition" "current" {
-
-}
-
 resource "aws_iam_role" "cluster" {
   name = "unicorn-eks-cluster-role"
   assume_role_policy = jsonencode({
@@ -49,7 +18,7 @@ resource "aws_eks_cluster" "main" {
   version  = var.kubernetes_version
   role_arn = aws_iam_role.cluster.arn
   vpc_config {
-    subnet_ids              = data.terraform_remote_state.foundation.outputs.private_subnet_ids
+    subnet_ids              = var.private_subnet_ids
     endpoint_public_access  = false
     endpoint_private_access = true
   }
@@ -59,7 +28,7 @@ resource "aws_eks_cluster" "main" {
   }
   encryption_config {
     provider {
-      key_arn = data.terraform_remote_state.foundation.outputs.platform_kms_arn
+      key_arn = var.platform_kms_arn
     }
     resources = ["secrets"]
   }
@@ -104,7 +73,7 @@ resource "aws_eks_node_group" "app" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "unicorn-app-ng"
   node_role_arn   = aws_iam_role.node.arn
-  subnet_ids      = data.terraform_remote_state.foundation.outputs.private_subnet_ids
+  subnet_ids      = var.private_subnet_ids
   instance_types  = ["t3.medium"]
   scaling_config {
     min_size     = 2
@@ -124,7 +93,7 @@ resource "aws_eks_node_group" "addon" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "unicorn-addon-ng"
   node_role_arn   = aws_iam_role.node.arn
-  subnet_ids      = data.terraform_remote_state.foundation.outputs.private_subnet_ids
+  subnet_ids      = var.private_subnet_ids
   instance_types  = ["t3.medium"]
   scaling_config {
     min_size     = 1
@@ -149,17 +118,4 @@ resource "aws_eks_addon" "ebs" {
   cluster_name = aws_eks_cluster.main.name
   addon_name   = "aws-ebs-csi-driver"
   depends_on   = [aws_eks_node_group.addon]
-}
-output "cluster_name" {
-  value = aws_eks_cluster.main.name
-}
-output "cluster_endpoint" {
-  value = aws_eks_cluster.main.endpoint
-}
-output "cluster_ca" {
-  value     = aws_eks_cluster.main.certificate_authority[0].data
-  sensitive = true
-}
-output "cluster_security_group_id" {
-  value = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
 }

@@ -95,7 +95,7 @@ resource "kubernetes_config_map_v1_data" "fluent_bit_metrics" {
   }
   data = {
     "fluent-bit.conf" = local.fluent_bit_config
-    "duration.lua"    = file("${path.module}/../../addons/assets/duration.lua")
+    "duration.lua"    = file("${path.module}/../../assets/addons/duration.lua")
   }
   field_manager = "terraform-observability-fix"
   force         = true
@@ -109,7 +109,7 @@ resource "kubernetes_annotations" "fluent_bit_rollout" {
     namespace = var.namespace
   }
   template_annotations = {
-    "wsc2026/log-metrics-config" = sha256(join("", [local.fluent_bit_config, file("${path.module}/../../addons/assets/duration.lua")]))
+    "wsc2026/log-metrics-config" = sha256(join("", [local.fluent_bit_config, file("${path.module}/../../assets/addons/duration.lua")]))
   }
   field_manager = "terraform-observability-fix"
   force         = true

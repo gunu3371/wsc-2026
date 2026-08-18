@@ -17,11 +17,11 @@
 | 1과제 워크로드 | `task1/addons` | Kubernetes, Helm, 앱·관측성 |
 | 2과제 | `task2/nosql`, `cdn`, `scaling`, `o11y` | 각 독립 root module |
 
-`task1/main.tf`는 이전 단일-state 구현이다. state 주소를 임의 이동하지 않기 위해 보존하지만 신규 적용은 위 분리 root module만 사용한다. 주요 1과제 리전은 `ap-northeast-2`, VPC CIDR은 `10.97.0.0/16`이다.
+단일-state 레거시 구현은 제거했으며, 신규 적용과 관리는 위 분리 root module만 사용한다. 주요 1과제 리전은 `ap-northeast-2`, VPC CIDR은 `10.97.0.0/16`이다.
 
 ## 실행·채점·정리
 
-각 module에서 `terraform init -input=false`, `terraform fmt -check`, `terraform validate`, `terraform plan -input=false -var-file=terraform.tfvars` 순으로 실행한다. 실제 값은 `task1/terraform.tfvars.example`를 복사해 작성하고, tag가 아닌 image digest URI를 사용한다.
+각 module에서 `terraform init -input=false`, `terraform fmt -check`, `terraform validate`, `terraform plan -input=false -var-file=terraform.tfvars` 순으로 실행한다. 실제 값은 각 module의 `terraform.tfvars.example`를 복사해 작성하고, tag가 아닌 image digest URI를 사용한다.
 
 1과제는 `foundation → cluster → addons` 순서다. addons는 private EKS API에 접근 가능한 CloudShell에서 foundation/cluster output과 `app_image`을 전달해 실행한다. 제공 Dockerfile·Python·HTML은 `assets/`에서 그대로 사용한다. 원본 `mark.sh`, `mark1.sh`~`mark4.sh`는 수정하지 않고 CloudShell에서 최대 3회만 실행·수정한다.
 

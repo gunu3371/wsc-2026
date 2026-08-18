@@ -39,7 +39,7 @@ resource "kubernetes_deployment_v1" "book" {
           }
           env {
             name  = "TABLE_NAME"
-            value = data.terraform_remote_state.infra.outputs.dynamodb_table_name
+            value = var.dynamodb_table_name
           }
           resources {
             requests = {
@@ -71,4 +71,3 @@ resource "kubernetes_service_v1" "book" {
     }
   }
 }
-

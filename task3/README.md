@@ -19,7 +19,8 @@ task3/
 ├── extensions/
 │   └── monitoring/              # CloudWatch Observability addon, alarms, dashboard
 ├── assets/
-│   └── Dockerfile.binary        # 공식 x86 바이너리 패키징용
+│   └── shared/
+│       └── Dockerfile.binary    # 공식 x86 바이너리 패키징용
 ├── REQUIREMENTS.md
 └── ERROR_CANDIDATES.md
 ```
@@ -84,16 +85,16 @@ kubectl auth can-i '*' '*' --all-namespaces
 
 ## 2. 공식 바이너리 이미지 build/push
 
-`assets/Dockerfile.binary`는 공식 linux/amd64 바이너리를 변경하지 않고 Amazon Linux 2023 컨테이너에 넣습니다. 아래 `<binary>`는 실제 지급 파일명으로 바꿉니다.
+`assets/shared/Dockerfile.binary`는 공식 linux/amd64 바이너리를 변경하지 않고 Amazon Linux 2023 컨테이너에 넣습니다. 아래 `<binary>`는 실제 지급 파일명으로 바꿉니다.
 
 ```powershell
 $AccountId = aws sts get-caller-identity --query Account --output text
 $Registry = "$AccountId.dkr.ecr.ap-northeast-2.amazonaws.com"
 aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $Registry
 
-docker build --platform linux/amd64 -f task3/assets/Dockerfile.binary --build-arg BINARY=<user-binary> -t "$Registry/apdev-task3-user:latest" .
-docker build --platform linux/amd64 -f task3/assets/Dockerfile.binary --build-arg BINARY=<product-binary> -t "$Registry/apdev-task3-product:latest" .
-docker build --platform linux/amd64 -f task3/assets/Dockerfile.binary --build-arg BINARY=<stress-binary> -t "$Registry/apdev-task3-stress:latest" .
+docker build --platform linux/amd64 -f task3/assets/shared/Dockerfile.binary --build-arg BINARY=<user-binary> -t "$Registry/apdev-task3-user:latest" .
+docker build --platform linux/amd64 -f task3/assets/shared/Dockerfile.binary --build-arg BINARY=<product-binary> -t "$Registry/apdev-task3-product:latest" .
+docker build --platform linux/amd64 -f task3/assets/shared/Dockerfile.binary --build-arg BINARY=<stress-binary> -t "$Registry/apdev-task3-stress:latest" .
 
 docker push "$Registry/apdev-task3-user:latest"
 docker push "$Registry/apdev-task3-product:latest"

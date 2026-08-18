@@ -67,7 +67,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "web" {
 }
 resource "aws_s3_object" "web" {
   for_each = {
-    "web/main/index.html" = "${path.module}/assets/index.html", "web/main/main.jpeg" = "${path.module}/assets/main.jpeg"
+    "web/main/index.html" = "${path.module}/../assets/foundation/index.html", "web/main/main.jpeg" = "${path.module}/../assets/foundation/main.jpeg"
   }
   bucket                 = aws_s3_bucket.web.id
   key                    = each.key

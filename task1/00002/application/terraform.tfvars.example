@@ -1,2 +1,6 @@
-candidate_id = "00002"
+task_id             = "00002"
 book_image_uri = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wskorea26-book-repo:stable"
+eks_cluster_name     = "wskorea26-cluster"
+cluster_endpoint     = "https://replace-me.eks.ap-northeast-2.amazonaws.com"
+cluster_ca           = "replace-with-base64-cluster-ca"
+dynamodb_table_name  = "wskorea26-data-table"

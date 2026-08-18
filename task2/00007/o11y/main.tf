@@ -261,7 +261,7 @@ resource "kubernetes_config_map_v1" "loki" {
     namespace = "monitoring"
   }
   data = {
-    "config.yaml" = file("${path.module}/assets/loki.yaml")
+    "config.yaml" = file("${path.module}/../assets/o11y/loki.yaml")
   }
 }
 resource "kubernetes_persistent_volume_claim_v1" "loki" {
@@ -384,7 +384,7 @@ resource "kubernetes_config_map_v1" "otel" {
     namespace = "monitoring"
   }
   data = {
-    "config.yaml" = file("${path.module}/assets/otel.yaml")
+    "config.yaml" = file("${path.module}/../assets/o11y/otel.yaml")
   }
 }
 resource "kubernetes_daemon_set_v1" "otel" {
@@ -455,7 +455,7 @@ resource "kubernetes_config_map_v1" "grafana" {
     namespace = "monitoring"
   }
   data = {
-    "datasource.yaml" = file("${path.module}/assets/datasource.yaml"), "dashboard-provider.yaml" = file("${path.module}/assets/dashboard-provider.yaml"), "log-overview.json" = file("${path.module}/assets/log-overview.json")
+    "datasource.yaml" = file("${path.module}/../assets/o11y/datasource.yaml"), "dashboard-provider.yaml" = file("${path.module}/../assets/o11y/dashboard-provider.yaml"), "log-overview.json" = file("${path.module}/../assets/o11y/log-overview.json")
   }
 }
 resource "kubernetes_deployment_v1" "grafana" {

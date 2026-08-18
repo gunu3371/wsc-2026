@@ -184,9 +184,9 @@ resource "aws_instance" "client" {
   iam_instance_profile        = aws_iam_instance_profile.client.name
   user_data_replace_on_change = true
   # EC2 user-data has a 16 KiB API limit; cloud-init transparently expands gzip input.
-  user_data_base64 = base64gzip(templatefile("${path.module}/user-data.sh.tftpl", {
-    client_source = base64encode(file("${path.module}/assets/docdb_client.py"))
-    dataset       = base64encode(file("${path.module}/assets/retail_dataset.json"))
+  user_data_base64 = base64gzip(templatefile("${path.module}/../assets/documentdb/user-data.sh.tftpl", {
+    client_source = base64encode(file("${path.module}/../assets/documentdb/docdb_client.py"))
+    dataset       = base64encode(file("${path.module}/../assets/documentdb/retail_dataset.json"))
   }))
   metadata_options {
     http_endpoint = "enabled"

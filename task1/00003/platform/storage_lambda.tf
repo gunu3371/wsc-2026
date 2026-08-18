@@ -36,7 +36,7 @@ resource "aws_s3_object" "static" {
 
 data "archive_file" "book_get" {
   type        = "zip"
-  source_file = "${path.module}/assets/book_get.py"
+  source_file = "${path.module}/../assets/platform/book_get.py"
   output_path = "${path.module}/book_get.zip"
 }
 data "aws_iam_policy_document" "lambda_assume" {

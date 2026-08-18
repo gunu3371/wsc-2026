@@ -63,7 +63,7 @@ resource "kubernetes_config_map_v1" "dashboard" {
     }
   }
   data = {
-    "wsc2026-grafana-dashboard.json" = templatefile("${path.module}/../../addons/assets/dashboard.json.tftpl", {
+    "wsc2026-grafana-dashboard.json" = templatefile("${path.module}/../../assets/addons/dashboard.json.tftpl", {
       account_id = data.aws_caller_identity.current.account_id
       partition  = data.aws_partition.current.partition
       region     = var.region
@@ -72,7 +72,7 @@ resource "kubernetes_config_map_v1" "dashboard" {
 }
 
 locals {
-  alerts = yamldecode(file("${path.module}/../../addons/assets/alerts.yaml"))
+  alerts = yamldecode(file("${path.module}/../../assets/addons/alerts.yaml"))
 }
 
 resource "kubernetes_manifest" "alerts" {

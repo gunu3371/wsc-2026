@@ -52,7 +52,7 @@ resource "helm_release" "monitoring" {
       }]
     }
     grafana = {
-      adminUser     = "skills-${var.candidate_id}-admin"
+      adminUser     = "skills-${var.task_id}-admin"
       adminPassword = var.grafana_admin_password
       nodeSelector = {
         "node-type" = "addon"
@@ -75,7 +75,7 @@ resource "helm_release" "monitoring" {
       dashboards = {
         default = {
           wskorea26 = {
-            json = file("${path.module}/../foundation/monitoring/dashboard.json")
+            json = file("${path.module}/../assets/foundation/monitoring/dashboard.json")
           }
         }
       }

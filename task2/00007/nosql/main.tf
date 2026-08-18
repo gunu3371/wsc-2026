@@ -93,7 +93,7 @@ resource "aws_dynamodb_table" "audit" {
 
 data "archive_file" "audit" {
   type        = "zip"
-  source_file = "${path.module}/assets/lambda.py"
+  source_file = "${path.module}/../assets/nosql/lambda.py"
   output_path = "${path.module}/audit.zip"
 }
 resource "aws_iam_role" "lambda" {
@@ -229,8 +229,8 @@ resource "aws_instance" "app" {
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.app.id]
   iam_instance_profile   = aws_iam_instance_profile.app.name
-  user_data = templatefile("${path.module}/assets/user-data.sh", {
-    app_b64 = base64encode(file("${path.module}/assets/app.py"))
+  user_data = templatefile("${path.module}/../assets/nosql/user-data.sh", {
+    app_b64 = base64encode(file("${path.module}/../assets/nosql/app.py"))
   })
   tags = {
     Name = "bigbae-nosql-app-ec2"

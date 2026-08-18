@@ -126,8 +126,8 @@ resource "aws_instance" "service" {
   instance_type          = "t3.micro"
   subnet_id              = aws_subnet.service.id
   vpc_security_group_ids = [aws_security_group.service.id]
-  user_data = templatefile("${path.module}/service-user-data.sh.tftpl", {
-    service_app = base64encode(file("${path.module}/assets/service_app.py"))
+  user_data = templatefile("${path.module}/../assets/lattice/service-user-data.sh.tftpl", {
+    service_app = base64encode(file("${path.module}/../assets/lattice/service_app.py"))
   })
   metadata_options {
     http_endpoint = "enabled"
@@ -188,8 +188,8 @@ resource "aws_instance" "client" {
   subnet_id                   = aws_subnet.client.id
   associate_public_ip_address = true
   vpc_security_group_ids      = [aws_security_group.client.id]
-  user_data = templatefile("${path.module}/client-user-data.sh.tftpl", {
-    client_app  = base64encode(file("${path.module}/assets/client_app.py"))
+  user_data = templatefile("${path.module}/../assets/lattice/client-user-data.sh.tftpl", {
+    client_app  = base64encode(file("${path.module}/../assets/lattice/client_app.py"))
     service_url = "http://${aws_vpclattice_service.orders.dns_entry[0].domain_name}"
   })
   metadata_options {

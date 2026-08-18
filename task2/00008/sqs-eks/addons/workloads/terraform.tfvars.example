@@ -1,1 +1,6 @@
 worker_image = "123456789012.dkr.ecr.us-west-2.amazonaws.com/skills-sqs-worker@sha256:replace-me"
+cluster_name          = "skills-sqs-cluster"
+worker_role_arn       = "arn:aws:iam::123456789012:role/skills-sqs-worker-role"
+worker_repository_url = "123456789012.dkr.ecr.us-west-2.amazonaws.com/skills-sqs-worker"
+queue_url             = "https://sqs.us-west-2.amazonaws.com/123456789012/skills-sqs-queue"
+node_role_name        = "skills-sqs-karpenter-node-role"

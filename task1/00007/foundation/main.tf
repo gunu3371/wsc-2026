@@ -258,11 +258,11 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "web" {
 resource "aws_s3_object" "index" {
   bucket                 = aws_s3_bucket.web.id
   key                    = "index.html"
-  source                 = "${path.module}/../assets/index.html"
+  source                 = "${path.module}/../assets/foundation/index.html"
   content_type           = "text/html"
   server_side_encryption = "aws:kms"
   kms_key_id             = aws_kms_key.data.arn
-  etag                   = filemd5("${path.module}/../assets/index.html")
+  etag                   = filemd5("${path.module}/../assets/foundation/index.html")
 }
 resource "aws_dynamodb_table" "concert" {
   name                        = "unicorn-concert-db"

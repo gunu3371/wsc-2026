@@ -56,7 +56,7 @@ resource "aws_sns_topic" "alert" {
 
 data "archive_file" "remediation" {
   type        = "zip"
-  source_file = "${path.module}/lambda/remediate_security_group.py"
+  source_file = "${path.module}/../assets/cloud-event/lambda/remediate_security_group.py"
   output_path = "${path.module}/remediation.zip"
 }
 

@@ -77,8 +77,8 @@ locals {
   kms_aliases = toset(["db", "ecr", "eks", "bucket", "function"])
   suffix      = coalesce(var.bucket_random_suffix, random_string.bucket.result)
   static_files = length(var.static_files) > 0 ? var.static_files : {
-    "index.html" = "${path.module}/index.html"
-    "main.jpeg"  = "${path.module}/main.jpeg"
+    "index.html" = "${path.module}/../assets/platform/index.html"
+    "main.jpeg"  = "${path.module}/../assets/platform/main.jpeg"
   }
 }
 

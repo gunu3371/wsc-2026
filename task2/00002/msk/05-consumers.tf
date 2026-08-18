@@ -1,7 +1,7 @@
 data "archive_file" "consumer" {
   type = "zip"
   source {
-    content  = file("${path.module}/lambda/consumer.py")
+    content  = file("${path.module}/../assets/msk/lambda/consumer.py")
     filename = "index.py"
   }
   output_path = "${path.module}/consumer.zip"
@@ -9,7 +9,7 @@ data "archive_file" "consumer" {
 data "archive_file" "alert_consumer" {
   type = "zip"
   source {
-    content  = file("${path.module}/lambda/alert_consumer.py")
+    content  = file("${path.module}/../assets/msk/lambda/alert_consumer.py")
     filename = "index.py"
   }
   output_path = "${path.module}/alert-consumer.zip"

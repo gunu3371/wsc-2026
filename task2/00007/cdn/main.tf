@@ -33,16 +33,16 @@ resource "aws_s3_bucket_public_access_block" "landing" {
 resource "aws_s3_object" "a" {
   bucket       = aws_s3_bucket.landing.id
   key          = "version-a/index.html"
-  source       = "${path.module}/assets/index_a.html"
+  source       = "${path.module}/../assets/cdn/index_a.html"
   content_type = "text/html"
-  etag         = filemd5("${path.module}/assets/index_a.html")
+  etag         = filemd5("${path.module}/../assets/cdn/index_a.html")
 }
 resource "aws_s3_object" "b" {
   bucket       = aws_s3_bucket.landing.id
   key          = "version-b/index.html"
-  source       = "${path.module}/assets/index_b.html"
+  source       = "${path.module}/../assets/cdn/index_b.html"
   content_type = "text/html"
-  etag         = filemd5("${path.module}/assets/index_b.html")
+  etag         = filemd5("${path.module}/../assets/cdn/index_b.html")
 }
 
 resource "aws_cloudfront_key_value_store" "ab" {
@@ -70,7 +70,7 @@ resource "aws_cloudfront_function" "request" {
   name                         = "skillsphone-cdn-ab-req-fn"
   runtime                      = "cloudfront-js-2.0"
   publish                      = true
-  code                         = file("${path.module}/assets/request.js")
+  code                         = file("${path.module}/../assets/cdn/request.js")
   key_value_store_associations = [aws_cloudfront_key_value_store.ab.arn]
   depends_on                   = [aws_cloudfrontkeyvaluestore_key.weight, aws_cloudfrontkeyvaluestore_key.a, aws_cloudfrontkeyvaluestore_key.b]
 
@@ -79,7 +79,7 @@ resource "aws_cloudfront_function" "response" {
   name    = "skillsphone-cdn-ab-res-fn"
   runtime = "cloudfront-js-2.0"
   publish = true
-  code    = file("${path.module}/assets/response.js")
+  code    = file("${path.module}/../assets/cdn/response.js")
 }
 resource "aws_cloudfront_origin_access_control" "landing" {
   name                              = "skillsphone-cdn-ab-oac"

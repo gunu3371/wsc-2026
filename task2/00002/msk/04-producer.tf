@@ -37,8 +37,8 @@ resource "aws_instance" "producer" {
   subnet_id              = aws_subnet.private[0].id
   vpc_security_group_ids = [aws_security_group.clients.id]
   iam_instance_profile   = aws_iam_instance_profile.producer.name
-  user_data = templatefile("${path.module}/user_data.sh.tftpl", {
-    bucket = aws_s3_bucket.alert.id, bootstrap = aws_msk_cluster.this.bootstrap_brokers_sasl_iam, region = "ap-northeast-1", wrapper_base64 = base64encode(file("${path.module}/assets/producer-wrapper.sh"))
+  user_data = templatefile("${path.module}/../assets/msk/user_data.sh.tftpl", {
+    bucket = aws_s3_bucket.alert.id, bootstrap = aws_msk_cluster.this.bootstrap_brokers_sasl_iam, region = "ap-northeast-1", wrapper_base64 = base64encode(file("${path.module}/../assets/msk/producer-wrapper.sh"))
   })
   tags = {
     Name = "wsc2026-sensor-producer"

@@ -30,7 +30,7 @@ resource "aws_iam_role_policy" "lambda_ddb" {
 }
 data "archive_file" "book" {
   type        = "zip"
-  source_file = "${path.module}/lambda/book.py"
+  source_file = "${path.module}/../assets/foundation/lambda/book.py"
   output_path = "${path.module}/book.zip"
 }
 resource "aws_lambda_function" "book" {

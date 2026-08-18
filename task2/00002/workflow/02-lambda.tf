@@ -1,14 +1,14 @@
 data "archive_file" "processor" {
   type = "zip"
   source {
-    content  = file("${path.module}/lambda/processor.py")
+    content  = file("${path.module}/../assets/workflow/lambda/processor.py")
     filename = "index.py"
   }
   output_path = "${path.module}/processor.zip"
 }
 data "archive_file" "trigger" {
   type        = "zip"
-  source_file = "${path.module}/lambda/trigger.py"
+  source_file = "${path.module}/../assets/workflow/lambda/trigger.py"
   output_path = "${path.module}/trigger.zip"
 }
 resource "aws_iam_role" "lambda" {
