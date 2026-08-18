@@ -46,6 +46,11 @@ taskN/
     │   ├── eks/
     │   ├── monitoring/
     │   └── grading-bastion/
+    ├── assets/                      # Terraform 입력 자산의 과제 단위 저장소
+    │   ├── foundation/
+    │   ├── application/
+    │   ├── extensions/
+    │   └── shared/                  # 둘 이상의 root module이 공유하는 자산만 사용
     ├── foundation/                  # 독립 root module/state
     │   ├── 00-common.tf
     │   ├── 01-network.tf
@@ -69,7 +74,9 @@ taskN/
 - `00-common.tf`에는 계정·리전 data source, 공통 locals 등만 둔다.
 - `versions.tf`에는 Terraform/provider 버전과 provider 설정을 둔다.
 - `variables.tf`와 `outputs.tf`에는 각각 입력과 출력만 둔다.
-- Terraform이 읽는 Lambda 소스, 웹 자산, 컨테이너 파일, 사용자 데이터, 테스트 데이터와 템플릿은 과제 루트의 `assets/` 아래에 둔다. 기본 경로는 `task1/<과제번호>/assets/<root-module-경로>/...`, `task2/<과제번호>/assets/<root-module-경로>/...`, `task3/assets/<root-module-경로>/...`이며, 여러 root module이 공유하는 자산만 `assets/shared/`에 둔다. Lambda ZIP처럼 Terraform 실행 중 생성되는 산출물은 `assets/`에 넣지 않는다.
+- Terraform이 읽는 Lambda 소스, 웹 자산, 컨테이너 파일, 사용자 데이터, 테스트 데이터와 템플릿은 과제 루트의 `assets/` 아래에 둔다. 기본 경로는 `task1/<과제번호>/assets/<root-module-경로>/...`, `task2/<과제번호>/assets/<root-module-경로>/...`, `task3/assets/<root-module-경로>/...`이며, 여러 root module이 공유하는 자산만 `assets/shared/`에 둔다. 중첩 root module은 디렉터리 경로를 그대로 반영한다. 예: `sqs-eks/addons/workloads`는 `assets/sqs-eks/addons/workloads/`를 사용한다.
+- root module 내부의 `assets/`, `lambda/`, 루트 단독 소스 파일에 Terraform 입력 자산을 새로 두지 않는다. Terraform 코드는 과제 루트 `assets/`의 소유 경로만 참조하며, root module 사이에 자산 경로 의존성을 만들지 않는다.
+- 공식 원본 폴더의 배포 자산은 이동하거나 수정하지 않는다. Terraform용 자산을 과제 디렉터리 안에서 옮길 때는 파일 내용을 바꾸지 않고, 이동 전후 Git blob hash 또는 SHA-256으로 동일성을 확인한다. Lambda ZIP처럼 Terraform 실행 중 생성되는 산출물은 `assets/`에 넣지 않는다.
 - 파일 분리는 가독성을 위한 것이며 같은 디렉터리의 모든 `.tf`는 하나의 root module로 함께 평가된다는 점을 README에 명시한다.
 - root module 사이에는 필요한 최소 값만 전달한다. `foundation`은 `vpc_id`, subnet IDs, cluster name, endpoint 등 안정적인 output 계약을 제공하고, `application`과 `extensions`는 이를 입력 변수로 받는다. 소비 module의 `terraform.tfvars.example`에는 필요한 입력의 안전한 placeholder와 값을 얻을 foundation/infra output 이름을 함께 설명한다.
 - `modules/` 아래 child module에는 backend를 선언하지 않고 provider configuration도 가급적 두지 않는다. provider와 backend의 소유권은 이를 호출하는 root module에 둔다.
@@ -107,6 +114,7 @@ taskN/
 - 리전, 주요 네트워크 대역, 고정 리소스 이름
 - 사전 준비 사항과 필요한 도구 버전
 - 변수 설명과 `terraform.tfvars.example` 사용법
+- 과제 루트 `assets/`의 모듈별 경로와, 공식 원본을 수정하지 않고 재사용한다는 원칙
 - `init`, `fmt`, `validate`, `plan`, `apply` 실행 순서
 - 이미지 빌드/푸시나 별도 platform 적용 등 중간 절차
 - 채점 스크립트 실행 방법과 전제 조건
