@@ -19,7 +19,7 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = local.input.aws_region
   default_tags { tags = local.common_tags }
 }
 
@@ -29,8 +29,8 @@ provider "aws" {
   default_tags { tags = local.common_tags }
 }
 
-data "aws_eks_cluster" "main" { name = var.cluster_name }
-data "aws_eks_cluster_auth" "main" { name = var.cluster_name }
+data "aws_eks_cluster" "main" { name = local.input.cluster_name }
+data "aws_eks_cluster_auth" "main" { name = local.input.cluster_name }
 
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.main.endpoint

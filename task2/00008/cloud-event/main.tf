@@ -151,7 +151,7 @@ resource "aws_lambda_permission" "eventbridge" {
 
 resource "aws_s3_bucket" "trail" {
   bucket        = "skills-ceh-cloudtrail-${data.aws_caller_identity.current.account_id}"
-  force_destroy = var.cleanup_mode || var.force_destroy
+  force_destroy = local.input.cleanup_mode || local.input.force_destroy
   tags          = { Name = "skills-ceh-cloudtrail" }
 }
 
@@ -203,15 +203,6 @@ resource "aws_cloudtrail" "main" {
   tags                          = { Name = "skills-ceh-cloudtrail" }
 }
 
-variable "force_destroy" {
-  type    = bool
-  default = false
-}
-variable "cleanup_mode" {
-  description = "CloudTrail을 먼저 중지한 뒤 버킷의 로그 객체까지 함께 삭제하는 정리 모드입니다."
-  type        = bool
-  default     = false
-}
 
 output "protected_security_group_id" { value = aws_security_group.protected.id }
 output "topic_arn" { value = aws_sns_topic.alert.arn }

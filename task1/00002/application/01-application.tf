@@ -33,13 +33,13 @@ resource "kubernetes_deployment_v1" "book" {
         }
         container {
           name  = "book"
-          image = var.book_image_uri
+          image = local.input.book_image_uri
           port {
             container_port = 8080
           }
           env {
             name  = "TABLE_NAME"
-            value = var.dynamodb_table_name
+            value = local.input.dynamodb_table_name
           }
           resources {
             requests = {

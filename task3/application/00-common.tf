@@ -2,12 +2,12 @@ data "aws_caller_identity" "current" {}
 data "aws_partition" "current" {}
 
 data "aws_secretsmanager_secret_version" "database" {
-  secret_id = var.database_secret_arn
+  secret_id = local.input.database_secret_arn
 }
 
 data "aws_ecr_repository" "application" {
   for_each = toset(["user", "product", "stress"])
-  name     = "${var.project_name}-${each.key}"
+  name     = "${local.input.project_name}-${each.key}"
 }
 
 data "aws_cloudfront_cache_policy" "disabled" {
@@ -26,15 +26,15 @@ locals {
   db = jsondecode(data.aws_secretsmanager_secret_version.database.secret_string)
 
   common_tags = {
-    Project     = var.project_name
-    CandidateId = var.candidate_id
+    Project     = local.input.project_name
+    CandidateId = local.input.candidate_id
     Task        = "3"
     ManagedBy   = "Terraform"
   }
 
   app_images = {
     for name, repository in data.aws_ecr_repository.application :
-    name => "${repository.repository_url}:${var.image_tag}"
+    name => "${repository.repository_url}:${local.input.image_tag}"
   }
 
   app_ports = {

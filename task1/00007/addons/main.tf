@@ -8,7 +8,7 @@ resource "aws_iam_role" "app" {
         StringEquals = {
           "aws:SourceAccount" = data.aws_caller_identity.current.account_id
           }, ArnLike = {
-          "aws:SourceArn" = "arn:aws:eks:ap-northeast-2:${data.aws_caller_identity.current.account_id}:podidentityassociation/${var.cluster_name}/*"
+          "aws:SourceArn" = "arn:aws:eks:ap-northeast-2:${data.aws_caller_identity.current.account_id}:podidentityassociation/${local.input.cluster_name}/*"
         }
       }
     }]
@@ -18,7 +18,7 @@ resource "aws_iam_role_policy" "app" {
   role = aws_iam_role.app.id
   policy = jsonencode({
     Version = "2012-10-17", Statement = [{
-      Effect = "Allow", Action = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"], Resource = [var.table_arn, "${var.table_arn}/index/*"]
+      Effect = "Allow", Action = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"], Resource = [local.input.table_arn, "${local.input.table_arn}/index/*"]
     }]
   })
 }
@@ -34,7 +34,7 @@ resource "kubernetes_service_account_v1" "app" {
   }
 }
 resource "aws_eks_pod_identity_association" "app" {
-  cluster_name    = var.cluster_name
+  cluster_name    = local.input.cluster_name
   namespace       = "unicorn"
   service_account = "unicorn-book-app"
   role_arn        = aws_iam_role.app.arn
@@ -69,7 +69,7 @@ resource "kubernetes_deployment_v1" "app" {
         termination_grace_period_seconds = 30
         container {
           name  = "book"
-          image = var.app_image
+          image = local.input.app_image
           port {
             container_port = 8080
           }
@@ -135,7 +135,7 @@ data "archive_file" "lambda" {
 resource "aws_cloudwatch_log_group" "lambda" {
   name              = "/unicorn/lambda/get-booking"
   retention_in_days = 30
-  kms_key_id        = var.platform_kms_arn
+  kms_key_id        = local.input.platform_kms_arn
 }
 resource "aws_iam_role" "lambda" {
   name = "unicorn-get-booking-role"
@@ -151,7 +151,7 @@ resource "aws_iam_role_policy" "lambda" {
   role = aws_iam_role.lambda.id
   policy = jsonencode({
     Version = "2012-10-17", Statement = [{
-      Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:Query"], Resource = [var.table_arn, "${var.table_arn}/index/*"]
+      Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:Query"], Resource = [local.input.table_arn, "${local.input.table_arn}/index/*"]
       }, {
       Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents"], Resource = "${aws_cloudwatch_log_group.lambda.arn}:*"
     }]
@@ -165,7 +165,7 @@ resource "aws_lambda_function" "get" {
   handler          = "lambda.handler"
   runtime          = "python3.13"
   timeout          = 15
-  kms_key_arn      = var.app_kms_arn
+  kms_key_arn      = local.input.app_kms_arn
   logging_config {
     log_group  = aws_cloudwatch_log_group.lambda.name
     log_format = "JSON"
@@ -179,7 +179,7 @@ resource "aws_lambda_function" "get" {
 
 resource "aws_security_group" "alb" {
   name   = "unicorn-alb-sg"
-  vpc_id = var.vpc_id
+  vpc_id = local.input.vpc_id
   ingress {
     from_port   = 80
     to_port     = 80
@@ -200,21 +200,21 @@ resource "aws_security_group_rule" "alb_to_nodes" {
   to_port                  = 30097
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.alb.id
-  security_group_id        = var.cluster_security_group_id
+  security_group_id        = local.input.cluster_security_group_id
 
 }
 resource "aws_lb" "main" {
   name               = "unicorn-alb"
   internal           = true
   load_balancer_type = "application"
-  subnets            = var.private_subnet_ids
+  subnets            = local.input.private_subnet_ids
   security_groups    = [aws_security_group.alb.id]
 }
 resource "aws_lb_target_group" "app" {
   name     = "unicorn-tg"
   port     = 30097
   protocol = "HTTP"
-  vpc_id   = var.vpc_id
+  vpc_id   = local.input.vpc_id
   health_check {
     path    = "/health"
     matcher = "200"
@@ -306,7 +306,7 @@ resource "aws_cloudfront_distribution" "main" {
   comment             = "unicorn-svc-cf"
   default_root_object = "index.html"
   origin {
-    domain_name              = "${var.bucket_name}.s3.ap-northeast-2.amazonaws.com"
+    domain_name              = "${local.input.bucket_name}.s3.ap-northeast-2.amazonaws.com"
     origin_id                = "web"
     origin_access_control_id = aws_cloudfront_origin_access_control.s3.id
   }
@@ -374,12 +374,12 @@ resource "aws_cloudfront_distribution" "main" {
 
 }
 resource "aws_s3_bucket_policy" "web" {
-  bucket = var.bucket_name
+  bucket = local.input.bucket_name
   policy = jsonencode({
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Principal = {
         Service = "cloudfront.amazonaws.com"
-        }, Action = "s3:GetObject", Resource = "arn:aws:s3:::${var.bucket_name}/*", Condition = {
+        }, Action = "s3:GetObject", Resource = "arn:aws:s3:::${local.input.bucket_name}/*", Condition = {
         StringEquals = {
           "AWS:SourceArn" = aws_cloudfront_distribution.main.arn
         }
@@ -475,7 +475,7 @@ resource "aws_cloudwatch_log_group" "waf" {
   provider          = aws.use1
   name              = "aws-waf-logs-unicorn"
   retention_in_days = 30
-  kms_key_id        = var.platform_use1_kms_arn
+  kms_key_id        = local.input.platform_use1_kms_arn
 }
 resource "aws_wafv2_web_acl_logging_configuration" "main" {
   provider                = aws.use1
@@ -489,10 +489,10 @@ resource "aws_iam_role" "audit" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Principal = {
-        AWS = var.audit_principal_arn
+        AWS = local.input.audit_principal_arn
         }, Action = "sts:AssumeRole", Condition = {
         StringEquals = {
-          "sts:ExternalId" = "unicorn-audit-2026${var.task_id}"
+          "sts:ExternalId" = "unicorn-audit-2026${local.input.task_id}"
         }
       }
     }]
@@ -503,7 +503,7 @@ resource "aws_iam_role_policy" "audit" {
   name = "unicorn-audit-readonly"
   policy = jsonencode({
     Version = "2012-10-17", Statement = [{
-      Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:Query"], Resource = [var.table_arn, "${var.table_arn}/index/*"]
+      Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:Query"], Resource = [local.input.table_arn, "${local.input.table_arn}/index/*"]
       }, {
       Effect = "Allow", Action = ["ec2:DescribeVpcs", "ec2:DescribeSubnets", "ec2:DescribeRouteTables", "ec2:DescribeVpcEndpoints", "ec2:DescribeFlowLogs", "eks:DescribeCluster", "eks:ListNodegroups", "eks:DescribeNodegroup"], Resource = "*"
     }]
@@ -561,7 +561,7 @@ resource "kubernetes_service_account_v1" "fluentbit" {
   }
 }
 resource "aws_eks_pod_identity_association" "fluentbit" {
-  cluster_name    = var.cluster_name
+  cluster_name    = local.input.cluster_name
   namespace       = "unicorn"
   service_account = "unicorn-fluent-bit"
   role_arn        = aws_iam_role.fluentbit.arn

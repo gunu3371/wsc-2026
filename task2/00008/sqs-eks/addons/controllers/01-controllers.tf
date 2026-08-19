@@ -31,14 +31,14 @@ resource "helm_release" "keda" {
   namespace  = kubernetes_namespace_v1.keda.metadata[0].name
   repository = "https://kedacore.github.io/charts"
   chart      = "keda"
-  version    = var.keda_chart_version
+  version    = local.input.keda_chart_version
 
   values = [yamlencode({
     serviceAccount = {
       operator = {
         create      = true
         name        = "keda-operator"
-        annotations = { "eks.amazonaws.com/role-arn" = var.keda_role_arn }
+        annotations = { "eks.amazonaws.com/role-arn" = local.input.keda_role_arn }
       }
     }
     podLabels = { "eks.amazonaws.com/compute-type" = "fargate" }
@@ -50,13 +50,13 @@ resource "helm_release" "karpenter" {
   namespace  = kubernetes_namespace_v1.karpenter.metadata[0].name
   repository = "oci://public.ecr.aws/karpenter"
   chart      = "karpenter"
-  version    = var.karpenter_chart_version
+  version    = local.input.karpenter_chart_version
 
   values = [yamlencode({
     serviceAccount = {
       create      = true
       name        = "karpenter"
-      annotations = { "eks.amazonaws.com/role-arn" = var.karpenter_role_arn }
+      annotations = { "eks.amazonaws.com/role-arn" = local.input.karpenter_role_arn }
     }
     settings   = { clusterName = data.aws_eks_cluster.this.name }
     controller = { resources = { requests = { cpu = "250m", memory = "256Mi" }, limits = { cpu = "1", memory = "1Gi" } } }

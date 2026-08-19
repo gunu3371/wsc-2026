@@ -1,5 +1,5 @@
 resource "aws_security_group" "rds" {
-  name        = "${var.project_name}-rds"
+  name        = "${local.input.project_name}-rds"
   description = "MySQL access from the EKS cluster"
   vpc_id      = aws_vpc.main.id
 
@@ -18,11 +18,11 @@ resource "aws_security_group" "rds" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = { Name = "${var.project_name}-rds-sg" }
+  tags = { Name = "${local.input.project_name}-rds-sg" }
 }
 
 resource "aws_db_subnet_group" "main" {
-  name       = "${var.project_name}-db-subnets"
+  name       = "${local.input.project_name}-db-subnets"
   subnet_ids = aws_subnet.private[*].id
 }
 
@@ -46,7 +46,7 @@ resource "aws_db_instance" "main" {
   storage_encrypted     = true
 
   db_name  = "dev"
-  username = var.db_username
+  username = local.input.db_username
   password = random_password.db.result
   port     = 3306
 
@@ -61,14 +61,14 @@ resource "aws_db_instance" "main" {
 }
 
 resource "aws_secretsmanager_secret" "db" {
-  name                    = "${var.project_name}/database"
+  name                    = "${local.input.project_name}/database"
   recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "db" {
   secret_id = aws_secretsmanager_secret.db.id
   secret_string = jsonencode({
-    username = var.db_username
+    username = local.input.db_username
     password = random_password.db.result
     host     = aws_db_instance.main.address
     port     = aws_db_instance.main.port

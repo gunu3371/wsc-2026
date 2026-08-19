@@ -1,91 +1,31 @@
-variable "region" {
-  type    = string
-  default = "ap-northeast-2"
-}
-
-variable "aws_profile" {
-  type    = string
-  default = null
-}
-
-variable "candidate_id" {
-  type = string
-
+variable "config" {
+  description = "00003 과제의 공통 설정과 platform 입력입니다."
+  type = object({
+    common = object({
+      task_id     = string
+      region      = optional(string, "ap-northeast-2")
+      aws_profile = optional(string)
+      tags        = optional(map(string), {})
+    })
+    modules = object({
+      platform = object({
+        bucket_random_suffix       = optional(string)
+        image_uri                  = optional(string, "public.ecr.aws/docker/library/nginx:1.27")
+        alb_domain_name            = optional(string, "example.invalid")
+        eks_endpoint_public_access = optional(bool, false)
+        eks_public_access_cidrs    = optional(list(string), [])
+        cleanup_mode               = optional(bool, false)
+        static_files               = optional(map(string), {})
+      })
+    })
+    outputs = object({})
+  })
   validation {
-    condition     = can(regex("^[A-Za-z0-9-]+$", var.candidate_id))
-    error_message = "candidate_id must be usable in an S3 bucket name."
+    condition     = can(regex("^[A-Za-z0-9-]+$", var.config.common.task_id))
+    error_message = "task_id에는 영문자, 숫자와 하이픈만 사용할 수 있습니다."
   }
-}
-
-variable "bucket_random_suffix" {
-  type    = string
-  default = null
-}
-
-variable "image_uri" {
-  type    = string
-  default = "public.ecr.aws/docker/library/nginx:1.27"
-}
-
-variable "alb_domain_name" {
-  type    = string
-  default = "example.invalid"
-}
-
-variable "eks_endpoint_public_access" {
-  description = "Temporarily enable the EKS public endpoint for a CIDR-restricted administrative apply."
-  type        = bool
-  default     = false
-}
-
-variable "eks_public_access_cidrs" {
-  description = "CIDRs allowed when eks_endpoint_public_access is enabled."
-  type        = list(string)
-  default     = []
-
   validation {
-    condition     = !var.eks_endpoint_public_access || length(var.eks_public_access_cidrs) > 0
-    error_message = "eks_public_access_cidrs must not be empty when the public endpoint is enabled."
+    condition     = !var.config.modules.platform.eks_endpoint_public_access || length(var.config.modules.platform.eks_public_access_cidrs) > 0
+    error_message = "EKS public endpoint를 열 때는 허용 CIDR을 하나 이상 지정해야 합니다."
   }
-}
-
-variable "cleanup_mode" {
-  description = "Enable only for the documented two-phase destroy procedure. It first disables DynamoDB deletion protection and permits removal of S3 object versions and ECR images."
-  type        = bool
-  default     = false
-}
-
-variable "static_files" {
-  description = "Optional replacement map of object name to local path. Bundled index.html and main.jpeg are used when empty."
-  type        = map(string)
-  default     = {}
-}
-
-variable "tags" {
-  type    = map(string)
-  default = {}
-}
-
-data "aws_caller_identity" "current" {}
-data "aws_partition" "current" {}
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-locals {
-  azs         = slice(data.aws_availability_zones.available.names, 0, 2)
-  kms_aliases = toset(["db", "ecr", "eks", "bucket", "function"])
-  suffix      = coalesce(var.bucket_random_suffix, random_string.bucket.result)
-  static_files = length(var.static_files) > 0 ? var.static_files : {
-    "index.html" = "${path.module}/../assets/platform/index.html"
-    "main.jpeg"  = "${path.module}/../assets/platform/main.jpeg"
-  }
-}
-
-resource "random_string" "bucket" {
-  length  = 4
-  lower   = true
-  upper   = false
-  numeric = false
-  special = false
 }

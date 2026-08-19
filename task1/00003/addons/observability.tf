@@ -48,7 +48,7 @@ resource "helm_release" "prometheus" {
           editable  = true
           jsonData = {
             authType      = "default"
-            defaultRegion = var.region
+            defaultRegion = local.input.region
           }
         }], sidecar = {
         dashboards = {
@@ -97,7 +97,7 @@ resource "helm_release" "fluent_bit" {
           Name cloudwatch_logs
           Match kube.*
           region ${
-      var.region
+      local.input.region
     }
           log_group_name /wsc2026/book
           log_stream_prefix fluent-bit-
@@ -122,7 +122,7 @@ resource "kubernetes_config_map_v1" "dashboard" {
     "wsc2026-grafana-dashboard.json" = templatefile("${path.module}/../assets/addons/dashboard.json.tftpl", {
       account_id = data.aws_caller_identity.current.account_id
       partition  = data.aws_partition.current.partition
-      region     = var.region
+      region     = local.input.region
     })
   }
 

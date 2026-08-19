@@ -39,7 +39,7 @@ resource "kubernetes_ingress_v1" "application" {
 }
 
 resource "aws_cloudfront_origin_access_control" "images" {
-  name                              = "${var.project_name}-images"
+  name                              = "${local.input.project_name}-images"
   description                       = "Private image bucket access"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -47,7 +47,7 @@ resource "aws_cloudfront_origin_access_control" "images" {
 }
 
 resource "aws_cloudfront_function" "image_path" {
-  name    = "${var.project_name}-image-path"
+  name    = "${local.input.project_name}-image-path"
   runtime = "cloudfront-js-2.0"
   publish = true
   code    = <<-JS
@@ -61,7 +61,7 @@ resource "aws_cloudfront_function" "image_path" {
 
 resource "aws_wafv2_web_acl" "main" {
   provider = aws.us_east_1
-  name     = "${var.project_name}-edge"
+  name     = "${local.input.project_name}-edge"
   scope    = "CLOUDFRONT"
 
   default_action {
@@ -149,7 +149,7 @@ resource "aws_wafv2_web_acl" "main" {
 
   visibility_config {
     cloudwatch_metrics_enabled = true
-    metric_name                = "${var.project_name}-edge"
+    metric_name                = "${local.input.project_name}-edge"
     sampled_requests_enabled   = true
   }
 }
@@ -173,7 +173,7 @@ resource "aws_cloudfront_distribution" "main" {
   }
 
   origin {
-    domain_name              = "${var.image_bucket_name}.s3.${var.aws_region}.amazonaws.com"
+    domain_name              = "${local.input.image_bucket_name}.s3.${local.input.aws_region}.amazonaws.com"
     origin_id                = "image-s3"
     origin_access_control_id = aws_cloudfront_origin_access_control.images.id
   }
@@ -221,7 +221,7 @@ data "aws_iam_policy_document" "image_bucket" {
   statement {
     sid       = "AllowCloudFrontRead"
     actions   = ["s3:GetObject"]
-    resources = ["arn:${data.aws_partition.current.partition}:s3:::${var.image_bucket_name}/*"]
+    resources = ["arn:${data.aws_partition.current.partition}:s3:::${local.input.image_bucket_name}/*"]
     principals {
       type        = "Service"
       identifiers = ["cloudfront.amazonaws.com"]
@@ -235,6 +235,6 @@ data "aws_iam_policy_document" "image_bucket" {
 }
 
 resource "aws_s3_bucket_policy" "images" {
-  bucket = var.image_bucket_name
+  bucket = local.input.image_bucket_name
   policy = data.aws_iam_policy_document.image_bucket.json
 }

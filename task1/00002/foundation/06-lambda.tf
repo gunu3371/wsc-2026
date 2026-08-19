@@ -36,7 +36,7 @@ data "archive_file" "book" {
 resource "aws_lambda_function" "book" {
   function_name    = "wskorea26-book-lambda"
   role             = aws_iam_role.lambda.arn
-  runtime          = var.lambda_runtime
+  runtime          = local.input.lambda_runtime
   handler          = "book.handler"
   filename         = data.archive_file.book.output_path
   source_code_hash = data.archive_file.book.output_base64sha256

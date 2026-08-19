@@ -28,7 +28,7 @@ resource "aws_kms_alias" "eks" {
 resource "aws_eks_cluster" "main" {
   name                      = "wskorea26-cluster"
   role_arn                  = aws_iam_role.eks.arn
-  version                   = var.cluster_version
+  version                   = local.input.cluster_version
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   access_config {
@@ -108,7 +108,7 @@ resource "aws_eks_node_group" "node" {
     min_size     = 1
     max_size     = 3
   }
-  tags = merge(var.tags, {
+  tags = merge(local.input.tags, {
     Name = "wskorea26-${each.key}-node"
   })
   depends_on = [aws_iam_role_policy_attachment.nodes]

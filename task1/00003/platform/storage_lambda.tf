@@ -1,6 +1,6 @@
 resource "aws_s3_bucket" "static" {
-  bucket        = "wsc2026-static-${local.suffix}-${lower(var.candidate_id)}-bucket"
-  force_destroy = var.cleanup_mode
+  bucket        = "wsc2026-static-${local.suffix}-${lower(local.input.task_id)}-bucket"
+  force_destroy = local.input.cleanup_mode
 }
 resource "aws_s3_bucket_public_access_block" "static" {
   bucket                  = aws_s3_bucket.static.id
@@ -58,7 +58,7 @@ resource "aws_iam_policy" "book_function" {
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Action = ["dynamodb:Query"], Resource = [aws_dynamodb_table.book.arn, "${aws_dynamodb_table.book.arn}/index/booking_id-index"]
       }, {
-      Effect = "Allow", Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], Resource = "arn:${data.aws_partition.current.partition}:logs:${var.region}:${data.aws_caller_identity.current.account_id}:*"
+      Effect = "Allow", Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"], Resource = "arn:${data.aws_partition.current.partition}:logs:${local.input.region}:${data.aws_caller_identity.current.account_id}:*"
       }, {
       Effect = "Allow", Action = ["kms:Decrypt"], Resource = [aws_kms_key.main["function"].arn, aws_kms_key.main["db"].arn]
     }]

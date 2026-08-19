@@ -1,12 +1,12 @@
 data "aws_partition" "current" {}
 
 resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
-  role       = var.node_role_name
+  role       = local.input.node_role_name
   policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
 resource "aws_eks_addon" "cloudwatch_observability" {
-  cluster_name = var.cluster_name
+  cluster_name = local.input.cluster_name
   addon_name   = "amazon-cloudwatch-observability"
 
   resolve_conflicts_on_create = "OVERWRITE"
@@ -16,13 +16,13 @@ resource "aws_eks_addon" "cloudwatch_observability" {
 }
 
 resource "aws_cloudwatch_log_metric_filter" "application_errors" {
-  name           = "${var.project_name}-application-errors"
+  name           = "${local.input.project_name}-application-errors"
   pattern        = "?ERROR ?Exception ?panic"
-  log_group_name = "/aws/containerinsights/${var.cluster_name}/application"
+  log_group_name = "/aws/containerinsights/${local.input.cluster_name}/application"
 
   metric_transformation {
     name      = "ApplicationErrors"
-    namespace = "Task3/${var.project_name}"
+    namespace = "Task3/${local.input.project_name}"
     value     = "1"
   }
 
@@ -30,9 +30,9 @@ resource "aws_cloudwatch_log_metric_filter" "application_errors" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "application_errors" {
-  alarm_name          = "${var.project_name}-application-errors"
+  alarm_name          = "${local.input.project_name}-application-errors"
   alarm_description   = "Application ERROR/Exception/panic log events detected"
-  namespace           = "Task3/${var.project_name}"
+  namespace           = "Task3/${local.input.project_name}"
   metric_name         = "ApplicationErrors"
   statistic           = "Sum"
   period              = 60
@@ -44,7 +44,7 @@ resource "aws_cloudwatch_metric_alarm" "application_errors" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "failed_nodes" {
-  alarm_name          = "${var.project_name}-failed-nodes"
+  alarm_name          = "${local.input.project_name}-failed-nodes"
   alarm_description   = "EKS Container Insights reports failed nodes"
   namespace           = "ContainerInsights"
   metric_name         = "cluster_failed_node_count"
@@ -57,12 +57,12 @@ resource "aws_cloudwatch_metric_alarm" "failed_nodes" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    ClusterName = var.cluster_name
+    ClusterName = local.input.cluster_name
   }
 }
 
 resource "aws_cloudwatch_dashboard" "main" {
-  dashboard_name = "${var.project_name}-operations"
+  dashboard_name = "${local.input.project_name}-operations"
   dashboard_body = jsonencode({
     widgets = [
       {
@@ -73,9 +73,9 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title  = "EKS node CPU and memory"
-          region = var.aws_region
+          region = local.input.aws_region
           metrics = [
-            ["ContainerInsights", "node_cpu_utilization", "ClusterName", var.cluster_name],
+            ["ContainerInsights", "node_cpu_utilization", "ClusterName", local.input.cluster_name],
             [".", "node_memory_utilization", ".", "."]
           ]
           period = 60
@@ -91,8 +91,8 @@ resource "aws_cloudwatch_dashboard" "main" {
         height = 6
         properties = {
           title   = "Application errors"
-          region  = var.aws_region
-          metrics = [["Task3/${var.project_name}", "ApplicationErrors"]]
+          region  = local.input.aws_region
+          metrics = [["Task3/${local.input.project_name}", "ApplicationErrors"]]
           period  = 60
           stat    = "Sum"
           view    = "timeSeries"

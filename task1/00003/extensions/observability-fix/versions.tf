@@ -13,16 +13,16 @@ terraform {
 }
 
 provider "aws" {
-  region  = var.region
-  profile = var.aws_profile
+  region  = local.input.region
+  profile = local.input.aws_profile
 }
 
 data "aws_eks_cluster" "main" {
-  name = var.cluster_name
+  name = local.input.cluster_name
 }
 
 data "aws_eks_cluster_auth" "main" {
-  name = var.cluster_name
+  name = local.input.cluster_name
 }
 
 provider "kubernetes" {

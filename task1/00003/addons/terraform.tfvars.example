@@ -1,6 +1,0 @@
-# platform output을 복사해 전달한다. private EKS 접근 환경에서만 사용한다.
-cluster_name       = "wsc2026-eks-cluster"
-table_name         = "wsc2026-book-table"
-vpc_id             = "vpc-replace-me"
-private_subnet_ids = ["subnet-replace-a", "subnet-replace-b"]
-image_uri          = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr@sha256:replace-me"

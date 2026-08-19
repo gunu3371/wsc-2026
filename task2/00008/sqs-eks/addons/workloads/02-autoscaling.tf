@@ -26,7 +26,7 @@ resource "kubernetes_manifest" "scaled_object" {
       triggers = [{
         type = "aws-sqs-queue"
         metadata = {
-          queueURL    = var.queue_url
+          queueURL    = local.input.queue_url
           queueLength = "2"
           awsRegion   = "us-west-2"
         }

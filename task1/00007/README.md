@@ -19,13 +19,25 @@
 
 단일-state 레거시 구현은 제거했으며, 신규 적용과 관리는 위 분리 root module만 사용한다. 주요 1과제 리전은 `ap-northeast-2`, VPC CIDR은 `10.97.0.0/16`이다.
 
-## 실행·채점·정리
+## 단일 변수 파일과 실행 순서
 
-각 module에서 `terraform init -input=false`, `terraform fmt -check`, `terraform validate`, `terraform plan -input=false -var-file=terraform.tfvars` 순으로 실행한다. 실제 값은 각 module의 `terraform.tfvars.example`를 복사해 작성하고, tag가 아닌 image digest URI를 사용한다.
+과제 루트에서 `Copy-Item terraform.tfvars.example terraform.tfvars`를 한 번 실행한다. `config.common`은 과제 공통값, `config.modules`는 직접 입력, `config.outputs`는 선행 root module의 output이다. 이미지에는 tag가 아닌 실제 digest URI를 사용한다.
+
+```powershell
+terraform -chdir=foundation init -input=false
+terraform -chdir=foundation validate
+terraform -chdir=foundation plan -input=false -var-file=../terraform.tfvars
+# foundation 적용 후 outputs.foundation을 갱신한다.
+terraform -chdir=cluster plan -input=false -var-file=../terraform.tfvars
+# cluster 적용 후 outputs.cluster를 갱신한다.
+terraform -chdir=addons plan -input=false -var-file=../terraform.tfvars
+```
+
+## 실행·채점·정리
 
 1과제는 `foundation → cluster → addons` 순서다. addons는 private EKS API에 접근 가능한 CloudShell에서 foundation/cluster output과 `app_image`을 전달해 실행한다. 제공 Dockerfile·Python·HTML은 `assets/`에서 그대로 사용한다. 원본 `mark.sh`, `mark1.sh`~`mark4.sh`는 수정하지 않고 CloudShell에서 최대 3회만 실행·수정한다.
 
-삭제는 `task1/addons → cluster → foundation` 순서이며 2과제는 각 독립 module을 제거한다. 데이터 생산자를 먼저 중지하고 AWS API로 S3/CloudWatch/EKS/ENI/NAT/EIP/ELB/IAM/KMS alias의 잔존 여부 및 KMS 삭제 예약일을 확인한다.
+삭제는 `addons → cluster → foundation` 순서이며 모든 명령에 `-var-file=../terraform.tfvars`를 전달한다. 2과제는 각 독립 module을 제거한다. 데이터 생산자를 먼저 중지하고 AWS API로 S3/CloudWatch/EKS/ENI/NAT/EIP/ELB/IAM/KMS alias의 잔존 여부 및 KMS 삭제 예약일을 확인한다.
 
 ## Terraform 입력 자산
 

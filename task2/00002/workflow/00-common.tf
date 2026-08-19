@@ -1,3 +1,3 @@
 locals {
-  bucket = "wsc2026-student-score-bucket-${var.candidate_id}"
+  bucket = "wsc2026-student-score-bucket-${local.input.task_id}"
 }

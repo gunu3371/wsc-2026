@@ -25,15 +25,17 @@
 
 공식 원본은 수정하지 않는다. Lambda ZIP 같은 Terraform 생성 산출물은 `assets/`에 저장하거나 커밋하지 않는다.
 
-## 실행과 검증
+## 단일 변수 파일과 실행
 
-각 module에서 아래 순서로 실행한다. `o11y`, `scaling`은 제공된 `terraform.tfvars.example`을 복사해 실제 값을 입력한다.
+과제 루트에서 `Copy-Item terraform.tfvars.example terraform.tfvars`를 한 번 실행한다. `cdn`, `nosql`, `o11y`, `scaling`은 같은 파일의 서로 다른 `config.modules` 구역을 사용한다.
 
 ```powershell
-terraform fmt -check -recursive
-terraform init -input=false
-terraform validate
-terraform plan -input=false -var-file=terraform.tfvars
+terraform -chdir=cdn init -input=false
+terraform -chdir=cdn validate
+terraform -chdir=cdn plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=nosql plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=o11y plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=scaling plan -input=false -var-file=../terraform.tfvars
 ```
 
 모듈은 독립적으로 plan/apply/destroy한다. EKS API 접근이 필요한 `o11y`와 `scaling`은 먼저 기반 EKS와 인증 정보를 준비하고, Kubernetes·Helm 리소스를 AWS 기반 리소스보다 먼저 제거한다.

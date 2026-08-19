@@ -1,52 +1,24 @@
-variable "aws_region" {
-  description = "AWS region. The task requires ap-northeast-2."
-  type        = string
-  default     = "ap-northeast-2"
-
+variable "config" {
+  description = "3과제 공통 설정과 foundation 입력입니다."
+  type = object({
+    common = object({
+      aws_region   = optional(string, "ap-northeast-2")
+      candidate_id = optional(string, "00000")
+      project_name = optional(string, "apdev-task3")
+    })
+    modules = object({
+      foundation = object({
+        vpc_cidr                                = optional(string, "10.30.0.0/16")
+        cluster_name                            = optional(string, "apdev-eks-cluster")
+        kubernetes_version                      = optional(string)
+        additional_cluster_admin_principal_arns = optional(set(string), [])
+        db_username                             = optional(string, "appuser")
+      })
+    })
+    outputs = object({})
+  })
   validation {
-    condition     = var.aws_region == "ap-northeast-2"
-    error_message = "Task 3 resources must be deployed in ap-northeast-2."
+    condition     = var.config.common.aws_region == "ap-northeast-2"
+    error_message = "3과제 리전은 ap-northeast-2여야 합니다."
   }
-}
-
-variable "candidate_id" {
-  description = "Candidate number used only for tags and globally unique names."
-  type        = string
-  default     = "00000"
-}
-
-variable "project_name" {
-  description = "Prefix for resources without a fixed name in the task."
-  type        = string
-  default     = "apdev-task3"
-}
-
-variable "vpc_cidr" {
-  description = "VPC CIDR."
-  type        = string
-  default     = "10.30.0.0/16"
-}
-
-variable "cluster_name" {
-  description = "EKS cluster name."
-  type        = string
-  default     = "apdev-eks-cluster"
-}
-
-variable "kubernetes_version" {
-  description = "Optional EKS Kubernetes version. Null uses the current EKS default."
-  type        = string
-  default     = null
-}
-
-variable "additional_cluster_admin_principal_arns" {
-  description = "IAM role/user ARNs that need EKS administrator access, for example the CloudShell role."
-  type        = set(string)
-  default     = []
-}
-
-variable "db_username" {
-  description = "Application database administrator username."
-  type        = string
-  default     = "appuser"
 }

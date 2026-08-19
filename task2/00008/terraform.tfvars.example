@@ -1,0 +1,75 @@
+# 이 파일은 00008 과제의 모든 독립 서비스와 SQS/EKS 단계가 함께 사용합니다.
+# 과제 루트에서 terraform.tfvars로 복사하고 placeholder를 실제 계정 값으로 변경합니다.
+# 실제 파일에는 ARN과 endpoint가 포함되므로 Git에 커밋하지 않습니다.
+
+config = {
+  common = {
+    # 응시번호가 아니라 과제번호입니다.
+    task_id = "00008"
+  }
+
+  modules = {
+    cloud_event = {
+      # 정상 적용은 둘 다 false입니다. producer를 중지한 뒤 정리할 때만 true를 검토합니다.
+      force_destroy = false
+      cleanup_mode  = false
+    }
+
+    documentdb = {
+      # 문서용 CIDR입니다. 실제 접속 IP의 /32로 제한합니다.
+      client_allowed_cidrs = ["203.0.113.10/32"]
+
+      # 정상 적용은 false입니다. destroy 절차에서 최종 snapshot 정책을 확인한 뒤 변경합니다.
+      skip_final_snapshot = false
+      cleanup_mode        = false
+    }
+
+    lattice = {
+      # 문서용 CIDR입니다. 실제 접속 IP의 /32로 제한합니다.
+      client_allowed_cidrs = ["203.0.113.10/32"]
+    }
+
+    sqs_eks = {
+      infra = {
+        kubernetes_version = "1.35"
+
+        # CloudShell 또는 채점 환경의 실제 공인 IP /32만 허용합니다.
+        cluster_public_access_cidrs = ["203.0.113.10/32"]
+
+        # 정상 적용은 false이며 정리할 때만 true로 변경합니다.
+        cleanup_mode = false
+      }
+
+      addons = {
+        controllers = {
+          keda_chart_version      = "2.17.2"
+          karpenter_chart_version = "1.6.3"
+        }
+
+        workloads = {
+          # null이면 infra에서 만든 ECR repository의 latest tag를 사용합니다.
+          # 채점이 digest를 요구하면 실제 @sha256 URI로 교체합니다.
+          worker_image = null
+        }
+      }
+
+      # 현재 추가 입력이 없지만 독립 extension 계약을 위해 유지합니다.
+      extensions = {
+        grading_bastion = {}
+      }
+    }
+  }
+
+  # sqs-eks/infra 적용 후 이름과 동일한 terraform output 결과를 복사합니다.
+  outputs = {
+    sqs_eks_infra = {
+      cluster_name          = "skills-sqs-cluster"
+      queue_url             = "https://sqs.us-west-2.amazonaws.com/123456789012/skills-sqs-queue"
+      keda_role_arn         = "arn:aws:iam::123456789012:role/skills-sqs-keda-role"
+      karpenter_role_arn    = "arn:aws:iam::123456789012:role/skills-sqs-karpenter-role"
+      worker_role_arn       = "arn:aws:iam::123456789012:role/skills-sqs-worker-role"
+      node_role_name        = "skills-sqs-karpenter-node-role"
+      worker_repository_url = "123456789012.dkr.ecr.us-west-2.amazonaws.com/skills-sqs-worker"
+    }
+  }
+}

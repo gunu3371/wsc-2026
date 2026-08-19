@@ -1,25 +1,18 @@
-variable "aws_profile" {
-  type    = string
-  default = null
+variable "config" {
+  description = "00002 과제 MSK 입력입니다."
+  type = object({
+    common = object({
+      task_id     = string
+      aws_profile = optional(string)
+      tags        = optional(map(string), { Project = "wsc2026", ManagedBy = "Terraform" })
+    })
+    modules = object({
+      msk = object({
+        producer_binary_path = string
+        availability_zones   = optional(list(string), ["ap-northeast-1a", "ap-northeast-1d"])
+        lambda_runtime       = optional(string, "python3.14")
+      })
+    })
+    outputs = object({})
+  })
 }
-variable "candidate_id" {
-  type = string
-}
-variable "producer_binary_path" {
-  type = string
-}
-variable "availability_zones" {
-  type    = list(string)
-  default = ["ap-northeast-1a", "ap-northeast-1d"]
-}
-variable "lambda_runtime" {
-  type    = string
-  default = "python3.14"
-}
-variable "tags" {
-  type = map(string)
-  default = {
-    Project = "wsc2026", ManagedBy = "Terraform"
-  }
-}
-

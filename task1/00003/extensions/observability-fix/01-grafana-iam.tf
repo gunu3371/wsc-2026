@@ -8,7 +8,7 @@ data "aws_iam_policy_document" "grafana_assume" {
     condition {
       test     = "StringEquals"
       variable = "${local.oidc_issuer}:sub"
-      values   = ["system:serviceaccount:${var.namespace}:${var.grafana_service_account}"]
+      values   = ["system:serviceaccount:${local.input.namespace}:${local.input.grafana_service_account}"]
     }
     condition {
       test     = "StringEquals"

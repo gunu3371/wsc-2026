@@ -19,13 +19,13 @@ terraform {
 
 provider "aws" {
 
-  region  = var.region
-  profile = var.aws_profile
+  region  = local.input.region
+  profile = local.input.aws_profile
   default_tags {
-    tags = merge(var.tags, {
-      Project     = "wsc2026"
-      CandidateId = var.candidate_id
-      ManagedBy   = "Terraform"
+    tags = merge(local.input.tags, {
+      Project   = "wsc2026"
+      TaskId    = local.input.task_id
+      ManagedBy = "Terraform"
     })
   }
 
@@ -35,12 +35,12 @@ provider "aws" {
 
   alias   = "global"
   region  = "us-east-1"
-  profile = var.aws_profile
+  profile = local.input.aws_profile
   default_tags {
-    tags = merge(var.tags, {
-      Project     = "wsc2026"
-      CandidateId = var.candidate_id
-      ManagedBy   = "Terraform"
+    tags = merge(local.input.tags, {
+      Project   = "wsc2026"
+      TaskId    = local.input.task_id
+      ManagedBy = "Terraform"
     })
   }
 

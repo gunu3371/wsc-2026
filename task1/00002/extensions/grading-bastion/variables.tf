@@ -1,22 +1,21 @@
-variable "candidate_id" {
-  type = string
-}
-
-variable "aws_profile" {
-  type    = string
-  default = null
-}
-
-variable "instance_type" {
-  type    = string
-  default = "t3.micro"
-}
-
-variable "tags" {
-  type = map(string)
-  default = {
-    Project   = "wskorea26-concert"
-    ManagedBy = "Terraform"
-    Purpose   = "one-time-ecr-push"
-  }
+variable "config" {
+  description = "00002 과제의 공통 설정과 grading-bastion 입력입니다."
+  type = object({
+    common = object({
+      task_id     = string
+      aws_profile = optional(string)
+      tags        = optional(map(string), {})
+    })
+    modules = object({
+      extensions = object({
+        grading_bastion = object({
+          instance_type = optional(string, "t3.micro")
+          tags = optional(map(string), {
+            Purpose = "one-time-ecr-push"
+          })
+        })
+      })
+    })
+    outputs = object({})
+  })
 }

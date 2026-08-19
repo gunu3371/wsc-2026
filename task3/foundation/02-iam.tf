@@ -9,7 +9,7 @@ data "aws_iam_policy_document" "eks_cluster_assume" {
 }
 
 resource "aws_iam_role" "eks_cluster" {
-  name               = "${var.project_name}-eks-cluster"
+  name               = "${local.input.project_name}-eks-cluster"
   assume_role_policy = data.aws_iam_policy_document.eks_cluster_assume.json
 }
 
@@ -29,7 +29,7 @@ data "aws_iam_policy_document" "eks_node_assume" {
 }
 
 resource "aws_iam_role" "eks_node" {
-  name               = "${var.project_name}-eks-node"
+  name               = "${local.input.project_name}-eks-node"
   assume_role_policy = data.aws_iam_policy_document.eks_node_assume.json
 }
 

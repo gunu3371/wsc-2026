@@ -1,8 +1,0 @@
-# 실제 profile과 이미지 digest를 환경에 맞게 지정한다.
-candidate_id = "00003"
-image_uri    = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr@sha256:replace-me"
-tags = {
-  Project     = "wsc2026"
-  CandidateId = "00003"
-  ManagedBy   = "Terraform"
-}

@@ -1,18 +1,16 @@
-variable "aws_profile" {
-  type    = string
-  default = null
+variable "config" {
+  description = "00002 과제 workflow 입력입니다."
+  type = object({
+    common = object({
+      task_id     = string
+      aws_profile = optional(string)
+      tags        = optional(map(string), { Project = "wsc2026", ManagedBy = "Terraform" })
+    })
+    modules = object({
+      workflow = object({
+        lambda_runtime = optional(string, "python3.12")
+      })
+    })
+    outputs = object({})
+  })
 }
-variable "candidate_id" {
-  type = string
-}
-variable "lambda_runtime" {
-  type    = string
-  default = "python3.12"
-}
-variable "tags" {
-  type = map(string)
-  default = {
-    Project = "wsc2026", ManagedBy = "Terraform"
-  }
-}
-

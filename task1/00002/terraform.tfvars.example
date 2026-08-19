@@ -1,0 +1,67 @@
+# 이 파일은 00002 과제 전체 root module이 함께 사용하는 입력 예시입니다.
+# 과제 루트에서 Copy-Item terraform.tfvars.example terraform.tfvars 로 복사한 뒤
+# replace-* 값을 실제 계정 값으로 변경합니다. 실제 terraform.tfvars는 Git에 커밋하지 않습니다.
+# 각 명령의 -var-file 경로는 root module 디렉터리를 기준으로 해석됩니다.
+
+config = {
+  # 모든 root module이 공유하는 과제 식별자, AWS profile과 태그입니다.
+  common = {
+    # 응시번호가 아니라 과제번호입니다. 고정값을 유지합니다.
+    task_id = "00002"
+
+    # null이면 현재 AWS SDK 기본 자격 증명 체인을 사용합니다.
+    aws_profile = null
+
+    tags = {
+      Project   = "wskorea26-concert"
+      TaskId    = "00002"
+      ManagedBy = "Terraform"
+    }
+  }
+
+  # 각 root module에 직접 입력하는 값입니다.
+  modules = {
+    foundation = {
+      # 문제지의 ap-northeast-2 가용 영역 두 개를 유지합니다.
+      availability_zones = ["ap-northeast-2c", "ap-northeast-2d"]
+      cluster_version    = "1.35"
+      lambda_runtime     = "python3.14"
+
+      # 정상 적용은 true입니다. destroy 전 보호 해제가 필요할 때만 false로 바꿉니다.
+      dynamodb_deletion_protection_enabled = true
+    }
+
+    application = {
+      # foundation ECR에 이미지를 push한 뒤 실제 URI로 변경합니다.
+      # 문제지나 README가 digest를 요구하면 :tag 대신 @sha256:<digest>를 사용합니다.
+      book_image_uri = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wskorea26-book-repo:stable"
+
+      # 예시 비밀번호를 실환경 비밀로 사용하지 말고 실제 tfvars를 별도로 보호합니다.
+      grafana_admin_password = "replace-with-secure-password"
+    }
+
+    extensions = {
+      grading_bastion = {
+        instance_type = "t3.micro"
+      }
+    }
+  }
+
+  # foundation 적용 후 terraform output 결과를 복사하는 구역입니다.
+  outputs = {
+    foundation = {
+      # terraform -chdir=foundation output -raw eks_cluster_name
+      eks_cluster_name = "replace-with-foundation-output"
+
+      # terraform -chdir=foundation output -raw cluster_endpoint
+      cluster_endpoint = "https://replace-me.eks.ap-northeast-2.amazonaws.com"
+
+      # terraform -chdir=foundation output -raw cluster_ca
+      # 인증서 데이터는 실제 tfvars 외부에 노출하거나 Git에 기록하지 않습니다.
+      cluster_ca = "replace-with-foundation-output"
+
+      # terraform -chdir=foundation output -raw dynamodb_table_name
+      dynamodb_table_name = "replace-with-foundation-output"
+    }
+  }
+}

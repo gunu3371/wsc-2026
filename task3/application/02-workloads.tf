@@ -23,10 +23,10 @@ resource "kubernetes_service_account_v1" "product" {
 }
 
 resource "aws_eks_pod_identity_association" "product" {
-  cluster_name    = var.cluster_name
+  cluster_name    = local.input.cluster_name
   namespace       = kubernetes_namespace_v1.main.metadata[0].name
   service_account = kubernetes_service_account_v1.product.metadata[0].name
-  role_arn        = var.product_pod_role_arn
+  role_arn        = local.input.product_pod_role_arn
 }
 
 resource "kubernetes_deployment_v1" "application" {
@@ -39,7 +39,7 @@ resource "kubernetes_deployment_v1" "application" {
   }
 
   spec {
-    replicas = var.replicas
+    replicas = local.input.replicas
 
     selector { match_labels = { app = each.key } }
 
@@ -85,10 +85,10 @@ resource "kubernetes_deployment_v1" "application" {
 
           dynamic "env" {
             for_each = each.key == "product" ? {
-              AWS_REGION         = var.aws_region
-              AWS_DEFAULT_REGION = var.aws_region
-              S3_BUCKET          = var.image_bucket_name
-              S3_BUCKET_NAME     = var.image_bucket_name
+              AWS_REGION         = local.input.aws_region
+              AWS_DEFAULT_REGION = local.input.aws_region
+              S3_BUCKET          = local.input.image_bucket_name
+              S3_BUCKET_NAME     = local.input.image_bucket_name
             } : {}
             content {
               name  = env.key

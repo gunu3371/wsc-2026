@@ -9,7 +9,7 @@ resource "kubernetes_service_account_v1" "worker" {
     name      = "sqs-worker-sa"
     namespace = kubernetes_namespace_v1.worker.metadata[0].name
     annotations = {
-      "eks.amazonaws.com/role-arn" = var.worker_role_arn
+      "eks.amazonaws.com/role-arn" = local.input.worker_role_arn
     }
   }
 }
@@ -38,10 +38,10 @@ resource "kubernetes_deployment_v1" "worker" {
         }
         container {
           name  = "worker"
-          image = coalesce(var.worker_image, "${var.worker_repository_url}:latest")
+          image = coalesce(local.input.worker_image, "${local.input.worker_repository_url}:latest")
           env {
             name  = "SQS_QUEUE_URL"
-            value = var.queue_url
+            value = local.input.queue_url
           }
           env {
             name  = "AWS_REGION"

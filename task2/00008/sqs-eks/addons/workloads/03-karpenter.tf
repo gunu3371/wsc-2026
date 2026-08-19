@@ -4,7 +4,7 @@ resource "kubernetes_manifest" "node_class" {
     kind       = "EC2NodeClass"
     metadata   = { name = "skills-sqs-nodeclass" }
     spec = {
-      role             = var.node_role_name
+      role             = local.input.node_role_name
       amiSelectorTerms = [{ alias = "al2023@latest" }]
       subnetSelectorTerms = [{
         tags = {

@@ -27,15 +27,17 @@
 
 공식 원본 `37_클라우드컴퓨팅/...`는 수정하지 않는다. Terraform이 생성하는 ZIP은 각 module에만 생성하며 `assets/`에 커밋하지 않는다.
 
-## 실행과 검증
+## 단일 변수 파일과 실행
 
-각 module에서 `terraform.tfvars.example`이 제공되면 이를 복사해 실제 값을 입력한 뒤 다음을 실행한다.
+과제 루트에서 `Copy-Item terraform.tfvars.example terraform.tfvars`를 한 번 실행한다. 네 서비스는 `config.modules`에서 각자의 입력만 사용하며 선행 output 의존성이 없다.
 
 ```powershell
-terraform fmt -check -recursive
-terraform init -input=false
-terraform validate
-terraform plan -input=false -var-file=terraform.tfvars
+terraform -chdir=workflow init -input=false
+terraform -chdir=workflow validate
+terraform -chdir=workflow plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=analytics plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=cloud-event plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=msk plan -input=false -var-file=../terraform.tfvars
 ```
 
 모든 plan 검토 후에만 사용자 요청에 따라 apply한다. `workflow`, `analytics`, `cloud-event`, `msk`는 서로 독립적으로 plan/apply/destroy할 수 있다.

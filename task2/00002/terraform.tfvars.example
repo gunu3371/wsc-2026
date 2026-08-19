@@ -1,0 +1,46 @@
+# 이 파일은 00002 과제의 네 독립 서비스 root module이 함께 사용합니다.
+# 과제 루트에서 terraform.tfvars로 복사합니다. 실제 파일은 Git에 커밋하지 않습니다.
+# 각 서비스는 서로 다른 리전을 사용하므로 가용 영역을 임의로 다른 과제에서 가져오지 않습니다.
+
+config = {
+  common = {
+    # 응시번호가 아니라 과제번호입니다.
+    task_id = "00002"
+
+    # null이면 현재 AWS SDK 기본 자격 증명 체인을 사용합니다.
+    aws_profile = null
+
+    tags = {
+      Project   = "wsc2026"
+      TaskId    = "00002"
+      ManagedBy = "Terraform"
+    }
+  }
+
+  modules = {
+    workflow = {
+      lambda_runtime = "python3.12"
+    }
+
+    analytics = {
+      availability_zones = ["ap-northeast-2a", "ap-northeast-2b"]
+
+      # 문서용 CIDR입니다. 실제 plan 전 접속이 필요한 최소 공인 IP /32로 제한합니다.
+      allowed_cidr = "203.0.113.10/32"
+    }
+
+    cloud_event = {
+      availability_zones = ["eu-west-1a", "eu-west-1b"]
+    }
+
+    msk = {
+      # 과제 루트 assets로 통합된 공식 바이너리 경로입니다.
+      producer_binary_path = "../assets/msk/app"
+      availability_zones   = ["ap-northeast-1a", "ap-northeast-1d"]
+      lambda_runtime       = "python3.14"
+    }
+  }
+
+  # 네 서비스는 독립적이므로 전달할 선행 module output이 없습니다.
+  outputs = {}
+}

@@ -1,7 +1,7 @@
 resource "aws_ecr_repository" "application" {
   for_each = toset(["user", "product", "stress"])
 
-  name                 = "${var.project_name}-${each.key}"
+  name                 = "${local.input.project_name}-${each.key}"
   image_tag_mutability = "MUTABLE"
   force_delete         = true
 
@@ -11,7 +11,7 @@ resource "aws_ecr_repository" "application" {
 }
 
 resource "aws_s3_bucket" "images" {
-  bucket        = "${var.project_name}-images-${var.candidate_id}-${data.aws_caller_identity.current.account_id}"
+  bucket        = "${local.input.project_name}-images-${local.input.candidate_id}-${data.aws_caller_identity.current.account_id}"
   force_destroy = true
 }
 
@@ -55,7 +55,7 @@ data "aws_iam_policy_document" "pod_identity_assume" {
 }
 
 resource "aws_iam_role" "product" {
-  name               = "${var.project_name}-product"
+  name               = "${local.input.project_name}-product"
   assume_role_policy = data.aws_iam_policy_document.pod_identity_assume.json
 }
 

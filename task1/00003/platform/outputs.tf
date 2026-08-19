@@ -21,7 +21,7 @@ output "book_table_arn" {
   value = aws_dynamodb_table.book.arn
 }
 output "image_uri" {
-  value = var.image_uri
+  value = local.input.image_uri
 }
 output "static_bucket_name" {
   value = aws_s3_bucket.static.id

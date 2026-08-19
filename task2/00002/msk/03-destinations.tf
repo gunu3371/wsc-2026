@@ -26,8 +26,8 @@ resource "aws_s3_bucket_public_access_block" "alert" {
 resource "aws_s3_object" "producer" {
   bucket      = aws_s3_bucket.alert.id
   key         = "bootstrap/app"
-  source      = var.producer_binary_path
-  source_hash = filemd5(var.producer_binary_path)
+  source      = local.input.producer_binary_path
+  source_hash = filemd5(local.input.producer_binary_path)
 }
 resource "aws_sns_topic" "alert" {
   name = "wsc2026-sensor-alert"

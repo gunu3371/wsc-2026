@@ -1,0 +1,61 @@
+# 이 파일은 단일 공통 3과제의 foundation, application, monitoring이 함께 사용합니다.
+# task3 루트에서 terraform.tfvars로 복사하고 foundation 적용 후 outputs를 갱신합니다.
+# 실제 파일에는 계정별 ARN과 endpoint가 포함되므로 Git에 커밋하지 않습니다.
+
+config = {
+  common = {
+    # task3에는 과제번호 하위 폴더가 없습니다. 이 값은 리소스 고유성을 위한 실제 응시자 식별값입니다.
+    candidate_id = "00000"
+
+    # 문제지의 고정 리전과 프로젝트 이름입니다.
+    aws_region   = "ap-northeast-2"
+    project_name = "apdev-task3"
+  }
+
+  modules = {
+    foundation = {
+      vpc_cidr     = "10.30.0.0/16"
+      cluster_name = "apdev-eks-cluster"
+
+      # null이면 provider/AWS에서 허용하는 기본 EKS 버전 선택을 따릅니다.
+      # 대회 환경의 지원 버전을 확인한 뒤 필요할 때만 "1.xx"로 고정합니다.
+      kubernetes_version = null
+
+      # CloudShell 채점 역할이 생성 주체와 다를 때 실제 IAM principal ARN을 추가합니다.
+      additional_cluster_admin_principal_arns = []
+
+      db_username = "appuser"
+    }
+
+    application = {
+      image_tag = "latest"
+      replicas  = 2
+    }
+
+    # 현재 직접 입력은 없지만 독립 extension 계약을 위해 유지합니다.
+    extensions = {
+      monitoring = {}
+    }
+  }
+
+  # foundation 적용 후 아래 명령의 결과를 복사합니다.
+  outputs = {
+    foundation = {
+      # terraform -chdir=foundation output -raw cluster_name
+      cluster_name = "replace-with-foundation-output"
+
+      # terraform -chdir=foundation output -raw node_role_name
+      node_role_name = "replace-with-foundation-output"
+
+      # terraform -chdir=foundation output -raw database_secret_arn
+      # ARN만 기록하며 secret 값 자체는 tfvars나 Git에 저장하지 않습니다.
+      database_secret_arn = "arn:aws:secretsmanager:ap-northeast-2:123456789012:secret:apdev-task3/database-example"
+
+      # terraform -chdir=foundation output -raw image_bucket_name
+      image_bucket_name = "apdev-task3-images-00000-123456789012"
+
+      # terraform -chdir=foundation output -raw product_pod_role_arn
+      product_pod_role_arn = "arn:aws:iam::123456789012:role/apdev-task3-product"
+    }
+  }
+}

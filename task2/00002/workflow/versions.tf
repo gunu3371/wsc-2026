@@ -11,9 +11,9 @@ terraform {
 }
 provider "aws" {
   region  = "ap-southeast-1"
-  profile = var.aws_profile
+  profile = local.input.aws_profile
   default_tags {
-    tags = merge(var.tags, { CandidateId = var.candidate_id })
+    tags = merge(local.input.tags, { TaskId = local.input.task_id })
   }
 }
 

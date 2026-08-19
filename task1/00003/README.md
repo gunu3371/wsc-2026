@@ -20,28 +20,37 @@
 
 리전은 `ap-northeast-2`이며, VPC CIDR은 `192.168.0.0/16`이다.
 
-## 배포 및 검증
+## 단일 변수 파일과 배포 순서
 
-각 root module에서 다음 순서로 실행한다. `addons`는 platform output을 입력으로 받고, private EKS endpoint에 접근 가능한 CloudShell 또는 VPC 내부 환경에서 실행한다.
+과제 루트에서 예시를 한 번만 복사한다. `config.common`은 공통값, `config.modules`는 모듈 직접 입력, `config.outputs.platform`은 platform 적용 후 복사할 output이다.
 
 ```powershell
-terraform fmt -check -recursive
-terraform init -input=false
-terraform validate
-terraform plan -input=false -var-file=terraform.tfvars
+Copy-Item terraform.tfvars.example terraform.tfvars
+terraform -chdir=platform init -input=false
+terraform -chdir=platform validate
+terraform -chdir=platform plan -input=false -var-file=../terraform.tfvars
 ```
 
-적용 순서는 `platform → addons → observability-fix`이다. `addons/terraform.tfvars.example`을 복사해 실제 output과 이미지 URI를 입력한다.
+platform 적용 후 `terraform -chdir=platform output`으로 값을 확인해 같은 `terraform.tfvars`의 `outputs.platform`을 갱신한다. 이후 addons와 extension을 검증한다.
+
+```powershell
+terraform -chdir=addons plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=extensions/observability-fix plan -input=false -var-file=../../terraform.tfvars
+terraform -chdir=extensions/grading-bastion plan -input=false -var-file=../../terraform.tfvars
+```
+
+적용 순서는 `platform → addons → observability-fix`이며, addons와 extension은 private EKS endpoint에 접근 가능한 CloudShell 또는 VPC 내부 환경에서 실행한다.
 
 ## 안전한 정리
 
 정리 순서는 `observability-fix → addons → platform`이다. S3 버전 객체, ECR 이미지 및 DynamoDB 삭제 보호까지 처리하려면 platform에서 아래 두 단계를 모두 실행한다.
 
 ```powershell
-terraform -chdir=task1/extensions/observability-fix destroy -auto-approve
-terraform -chdir=task1/addons destroy -auto-approve -var-file=terraform.tfvars
-terraform -chdir=task1/platform apply -auto-approve -var-file=terraform.tfvars -var='cleanup_mode=true'
-terraform -chdir=task1/platform destroy -auto-approve -var-file=terraform.tfvars -var='cleanup_mode=true'
+terraform -chdir=extensions/observability-fix destroy -var-file=../../terraform.tfvars
+terraform -chdir=addons destroy -var-file=../terraform.tfvars
+# terraform.tfvars의 config.modules.platform.cleanup_mode를 true로 변경한 뒤 실행한다.
+terraform -chdir=platform apply -var-file=../terraform.tfvars
+terraform -chdir=platform destroy -var-file=../terraform.tfvars
 ```
 
 `cleanup_mode` 기본값은 `false`다. `true`일 때만 DynamoDB 삭제 보호를 해제하고 S3의 모든 객체 버전 및 ECR 이미지를 제거할 수 있다. KMS 키는 AWS 정책에 따라 7일 삭제 예약 상태로 남는다. 정리 후 state, EKS/VPC/ELB/ENI/NAT/EIP, S3/ECR/DynamoDB/Lambda, CloudWatch Log Group, IAM, KMS 예약 상태를 AWS API로 교차 확인한다.

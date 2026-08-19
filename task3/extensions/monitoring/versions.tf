@@ -10,11 +10,11 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = local.input.aws_region
   default_tags {
     tags = {
-      Project     = var.project_name
-      CandidateId = var.candidate_id
+      Project     = local.input.project_name
+      CandidateId = local.input.candidate_id
       Task        = "3"
       ManagedBy   = "Terraform"
     }

@@ -49,7 +49,7 @@ resource "aws_iam_role_policy" "lambda" {
 resource "aws_lambda_function" "consumer" {
   function_name    = "wsc2026-sensor-consumer"
   role             = aws_iam_role.lambda.arn
-  runtime          = var.lambda_runtime
+  runtime          = local.input.lambda_runtime
   handler          = "index.handler"
   filename         = data.archive_file.consumer.output_path
   source_code_hash = data.archive_file.consumer.output_base64sha256
@@ -67,7 +67,7 @@ resource "aws_lambda_function" "consumer" {
 resource "aws_lambda_function" "alert" {
   function_name    = "wsc2026-sensor-alert-consumer"
   role             = aws_iam_role.lambda.arn
-  runtime          = var.lambda_runtime
+  runtime          = local.input.lambda_runtime
   handler          = "index.handler"
   filename         = data.archive_file.alert_consumer.output_path
   source_code_hash = data.archive_file.alert_consumer.output_base64sha256

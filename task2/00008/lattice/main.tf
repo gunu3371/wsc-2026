@@ -55,7 +55,7 @@ resource "aws_security_group" "client" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = var.client_allowed_cidrs
+    cidr_blocks = local.input.client_allowed_cidrs
   }
   egress {
     from_port   = 0
@@ -201,10 +201,6 @@ resource "aws_instance" "client" {
   depends_on = [aws_vpclattice_service_network_vpc_association.client, aws_vpclattice_listener.http]
 }
 
-variable "client_allowed_cidrs" {
-  type    = list(string)
-  default = ["0.0.0.0/0"]
-}
 output "service_domain" { value = aws_vpclattice_service.orders.dns_entry[0].domain_name }
 output "client_public_ip" { value = aws_instance.client.public_ip }
 

@@ -20,14 +20,6 @@ data "aws_availability_zones" "available" {
 data "aws_partition" "current" {
 
 }
-variable "log_generator_image" {
-  type        = string
-  description = "Published Module4 image URI"
-}
-variable "kubernetes_version" {
-  type    = string
-  default = "1.35"
-}
 
 resource "aws_vpc" "main" {
   cidr_block           = "10.84.0.0/16"
@@ -99,7 +91,7 @@ resource "aws_iam_role_policy_attachment" "cluster" {
 }
 resource "aws_eks_cluster" "main" {
   name     = "o11y-cluster"
-  version  = var.kubernetes_version
+  version  = local.input.kubernetes_version
   role_arn = aws_iam_role.cluster.arn
   vpc_config {
     subnet_ids              = aws_subnet.public[*].id
@@ -222,7 +214,7 @@ resource "kubernetes_deployment_v1" "app" {
       spec {
         container {
           name  = "log-generator"
-          image = var.log_generator_image
+          image = local.input.log_generator_image
           port {
             container_port = 8080
           }

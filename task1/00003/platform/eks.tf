@@ -72,8 +72,8 @@ resource "aws_eks_cluster" "main" {
   vpc_config {
     subnet_ids              = values(aws_subnet.private)[*].id
     endpoint_private_access = true
-    endpoint_public_access  = var.eks_endpoint_public_access
-    public_access_cidrs     = var.eks_endpoint_public_access ? var.eks_public_access_cidrs : null
+    endpoint_public_access  = local.input.eks_endpoint_public_access
+    public_access_cidrs     = local.input.eks_endpoint_public_access ? local.input.eks_public_access_cidrs : null
     security_group_ids      = [aws_security_group.eks.id]
   }
   encryption_config {

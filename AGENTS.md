@@ -41,6 +41,7 @@
 taskN/
 └── <과제번호>/
     ├── README.md
+    ├── terraform.tfvars.example     # 과제 전체 root module이 공유하는 주석 포함 입력 예시
     ├── modules/                     # 선택: 재사용 가치가 있는 내부 모듈
     │   ├── network/
     │   ├── eks/
@@ -78,13 +79,13 @@ taskN/
 - root module 내부의 `assets/`, `lambda/`, 루트 단독 소스 파일에 Terraform 입력 자산을 새로 두지 않는다. Terraform 코드는 과제 루트 `assets/`의 소유 경로만 참조하며, root module 사이에 자산 경로 의존성을 만들지 않는다.
 - 공식 원본 폴더의 배포 자산은 이동하거나 수정하지 않는다. Terraform용 자산을 과제 디렉터리 안에서 옮길 때는 파일 내용을 바꾸지 않고, 이동 전후 Git blob hash 또는 SHA-256으로 동일성을 확인한다. Lambda ZIP처럼 Terraform 실행 중 생성되는 산출물은 `assets/`에 넣지 않는다.
 - 파일 분리는 가독성을 위한 것이며 같은 디렉터리의 모든 `.tf`는 하나의 root module로 함께 평가된다는 점을 README에 명시한다.
-- root module 사이에는 필요한 최소 값만 전달한다. `foundation`은 `vpc_id`, subnet IDs, cluster name, endpoint 등 안정적인 output 계약을 제공하고, `application`과 `extensions`는 이를 입력 변수로 받는다. 소비 module의 `terraform.tfvars.example`에는 필요한 입력의 안전한 placeholder와 값을 얻을 foundation/infra output 이름을 함께 설명한다.
+- root module 사이에는 필요한 최소 값만 전달한다. `foundation`은 `vpc_id`, subnet IDs, cluster name, endpoint 등 안정적인 output 계약을 제공하고, `application`과 `extensions`는 이를 입력 변수로 받는다. 과제 루트에는 `config.common`, `config.modules`, `config.outputs` 구조의 단일 `terraform.tfvars.example`만 두고, 각 root module은 실행 시 과제 루트의 실제 `terraform.tfvars`를 명시적인 상대 `-var-file` 경로로 읽는다. `config.outputs`의 placeholder에는 값을 얻을 foundation/infra output 이름과 명령을 주석으로 설명한다.
 - `modules/` 아래 child module에는 backend를 선언하지 않고 provider configuration도 가급적 두지 않는다. provider와 backend의 소유권은 이를 호출하는 root module에 둔다.
 - backend와 state 위치가 안정적으로 관리될 때만 `terraform_remote_state`를 사용한다. 이 저장소의 root module 사이에서는 `backend = "local"` 또는 상대 경로(`../.../terraform.tfstate`)를 이용한 `terraform_remote_state`를 사용하지 않는다. 필요한 foundation/infra output은 소비 module의 명시적 변수로 전달하고, endpoint·CA처럼 AWS API에서 조회 가능한 값은 AWS data source를 함께 사용한다.
 - extension은 기존 리소스의 소유권을 가져가거나 동일 리소스를 중복 선언하지 않는다. 추가 리소스와 필요한 연결만 소유하여 extension 단독 `plan`, `apply`, `destroy`가 가능해야 한다.
 - 추가 과제를 기존 root module의 여러 `enable_*` 조건으로 누적하기보다 독립 extension을 우선한다. 기존 리소스와 반드시 원자적으로 생성·삭제되어야 할 때만 feature flag를 사용한다.
 - 이미 apply된 기존 과제를 구조 정리만을 위해 이동하지 않는다. 추가 과제는 먼저 `extensions/`로 붙인다. 실제 리소스 주소를 옮겨야 한다면 `moved` block 또는 검증된 `terraform state mv` 계획을 사용하고, plan에서 불필요한 destroy/create가 0건인지 확인한다.
-- `terraform.tfstate*`, 실제 `terraform.tfvars`, plan 파일, `.terraform/`, 생성 ZIP, 자격 증명과 비밀값은 커밋하지 않는다. 필요한 값은 `terraform.tfvars.example`에 안전한 예시로 제공한다.
+- `terraform.tfstate*`, 실제 `terraform.tfvars`, plan 파일, `.terraform/`, 생성 ZIP, 자격 증명과 비밀값은 커밋하지 않는다. 필요한 값은 과제 루트의 단일 `terraform.tfvars.example`에 안전한 예시와 한국어 주석으로 제공하고, root module 내부에는 별도 tfvars 예시를 만들지 않는다.
 
 ## 3. 구현 원칙
 
@@ -113,7 +114,7 @@ taskN/
 - 과제 단계와 `.tf` 파일의 1:1 대응표
 - 리전, 주요 네트워크 대역, 고정 리소스 이름
 - 사전 준비 사항과 필요한 도구 버전
-- 변수 설명과 `terraform.tfvars.example` 사용법
+- 과제 루트의 단일 `terraform.tfvars.example`에 있는 `common/modules/outputs` 변수 설명과 root module별 `-var-file` 사용법
 - 과제 루트 `assets/`의 모듈별 경로와, 공식 원본을 수정하지 않고 재사용한다는 원칙
 - `init`, `fmt`, `validate`, `plan`, `apply` 실행 순서
 - 이미지 빌드/푸시나 별도 platform 적용 등 중간 절차

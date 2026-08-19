@@ -11,8 +11,8 @@ locals {
   private_subnet_cidrs = ["10.30.10.0/24", "10.30.11.0/24"]
 
   common_tags = {
-    Project     = var.project_name
-    CandidateId = var.candidate_id
+    Project     = local.input.project_name
+    CandidateId = local.input.candidate_id
     Task        = "3"
     ManagedBy   = "Terraform"
   }

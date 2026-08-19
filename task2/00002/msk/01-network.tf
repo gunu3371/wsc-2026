@@ -16,7 +16,7 @@ resource "aws_subnet" "public" {
   count                   = 2
   vpc_id                  = aws_vpc.this.id
   cidr_block              = local.public[count.index]
-  availability_zone       = var.availability_zones[count.index]
+  availability_zone       = local.input.availability_zones[count.index]
   map_public_ip_on_launch = true
   tags = {
     Name = "msk-pub-${local.az[count.index]}"
@@ -26,7 +26,7 @@ resource "aws_subnet" "private" {
   count             = 2
   vpc_id            = aws_vpc.this.id
   cidr_block        = local.private[count.index]
-  availability_zone = var.availability_zones[count.index]
+  availability_zone = local.input.availability_zones[count.index]
   tags = {
     Name = "msk-priv-${local.az[count.index]}"
   }

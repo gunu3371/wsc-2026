@@ -59,20 +59,27 @@ foundation -> 공식 바이너리 이미지 build/push -> application -> monitor
 
 현재 저장소에는 공식 3과제 바이너리와 `load_user.dump`가 없습니다. 임의 구현으로 대체하면 입력 형식과 성능 특성이 달라질 수 있으므로, 공식 지급 파일을 확보한 뒤 아래 절차를 수행합니다.
 
+## 단일 변수 파일
+
+`task3` 루트에서 예시 파일을 한 번만 복사한다. `config.common`은 공통값, `config.modules`는 root module 직접 입력, `config.outputs.foundation`은 foundation 적용 후 후속 모듈에 전달할 값이다. 실제 파일은 Git에 커밋하지 않는다.
+
+```powershell
+Set-Location task3
+Copy-Item terraform.tfvars.example terraform.tfvars
+```
+
 ## 1. foundation
 
 PowerShell에서:
 
 ```powershell
-Set-Location task3/foundation
-Copy-Item terraform.tfvars.example terraform.tfvars
-terraform fmt -recursive
-terraform init -input=false
-terraform validate
-terraform plan -input=false -out foundation.tfplan
-terraform apply foundation.tfplan
+terraform -chdir=foundation fmt -check
+terraform -chdir=foundation init -input=false
+terraform -chdir=foundation validate
+terraform -chdir=foundation plan -input=false -var-file=../terraform.tfvars -out=foundation.tfplan
+terraform -chdir=foundation apply foundation.tfplan
 aws sts get-caller-identity
-terraform output
+terraform -chdir=foundation output
 ```
 
 CloudShell 역할이 cluster 생성 principal과 다르면 `additional_cluster_admin_principal_arns`에 IAM role ARN을 넣고 foundation에 반영합니다. 이후 CloudShell에서 다음을 검증합니다.
@@ -105,17 +112,15 @@ docker push "$Registry/apdev-task3-stress:latest"
 
 ## 3. application
 
-foundation output의 `database_secret_arn`, `image_bucket_name`, `product_pod_role_arn`을 `application/terraform.tfvars`에 복사합니다.
+foundation output의 `cluster_name`, `database_secret_arn`, `image_bucket_name`, `product_pod_role_arn`을 과제 루트 `terraform.tfvars`의 `config.outputs.foundation`에 복사합니다.
 
 ```powershell
-Set-Location ../application
-Copy-Item terraform.tfvars.example terraform.tfvars
-terraform fmt -recursive
-terraform init -input=false
-terraform validate
-terraform plan -input=false -out application.tfplan
-terraform apply application.tfplan
-terraform output -raw endpoint
+terraform -chdir=application fmt -check
+terraform -chdir=application init -input=false
+terraform -chdir=application validate
+terraform -chdir=application plan -input=false -var-file=../terraform.tfvars -out=application.tfplan
+terraform -chdir=application apply application.tfplan
+terraform -chdir=application output -raw endpoint
 ```
 
 CloudFront 생성에는 시간이 걸립니다. 제출값은 `endpoint` output 그대로이며 `/v1/` 같은 경로를 붙이지 않습니다.
@@ -136,16 +141,14 @@ kubectl -n apdev logs deploy/user --tail=50
 
 ## 4. monitoring extension
 
-foundation output `node_role_name`을 tfvars에 넣습니다.
+foundation output `node_role_name`과 `cluster_name`을 같은 `config.outputs.foundation` 구역에 넣습니다.
 
 ```powershell
-Set-Location ../extensions/monitoring
-Copy-Item terraform.tfvars.example terraform.tfvars
-terraform fmt -recursive
-terraform init -input=false
-terraform validate
-terraform plan -input=false -out monitoring.tfplan
-terraform apply monitoring.tfplan
+terraform -chdir=extensions/monitoring fmt -check
+terraform -chdir=extensions/monitoring init -input=false
+terraform -chdir=extensions/monitoring validate
+terraform -chdir=extensions/monitoring plan -input=false -var-file=../../terraform.tfvars -out=monitoring.tfplan
+terraform -chdir=extensions/monitoring apply monitoring.tfplan
 ```
 
 이 extension은 독립적으로 `plan/apply/destroy`할 수 있으며, foundation/application 리소스의 소유권을 가져가지 않습니다. CloudWatch Observability addon이 컨테이너 stdout/stderr와 Container Insights 지표를 수집합니다.
@@ -165,14 +168,9 @@ terraform apply monitoring.tfplan
 producer와 채점 트래픽을 먼저 중지한 뒤 아래 역순으로 제거합니다.
 
 ```powershell
-Set-Location task3/extensions/monitoring
-terraform destroy -input=false
-
-Set-Location ../../application
-terraform destroy -input=false
-
-Set-Location ../foundation
-terraform destroy -input=false
+terraform -chdir=extensions/monitoring destroy -input=false -var-file=../../terraform.tfvars
+terraform -chdir=application destroy -input=false -var-file=../terraform.tfvars
+terraform -chdir=foundation destroy -input=false -var-file=../terraform.tfvars
 ```
 
 application을 먼저 제거해야 nginx Service가 만든 NLB와 ENI가 VPC보다 먼저 삭제됩니다. foundation의 S3/ECR은 실습 정리를 위해 `force_destroy`이며, Secrets Manager secret은 즉시 삭제 설정입니다. 이 구현은 customer-managed KMS key를 만들지 않습니다.

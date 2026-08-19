@@ -1,4 +1,0 @@
-# foundation의 실제 state 경로를 명시한다.
-kubernetes_version  = "1.35"
-private_subnet_ids  = ["subnet-replace-a", "subnet-replace-b", "subnet-replace-c"]
-platform_kms_arn    = "arn:aws:kms:ap-northeast-2:123456789012:key/replace-me"

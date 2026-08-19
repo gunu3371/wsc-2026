@@ -2,7 +2,7 @@ resource "kubernetes_namespace_v1" "main" {
   metadata {
     name = "apdev"
     labels = {
-      "app.kubernetes.io/part-of" = var.project_name
+      "app.kubernetes.io/part-of" = local.input.project_name
     }
   }
 }

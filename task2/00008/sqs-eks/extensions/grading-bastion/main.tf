@@ -81,7 +81,7 @@ resource "aws_security_group" "bastion" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = { Name = "skills-sqs-grading-bastion-sg", ManagedBy = "Terraform", CandidateId = "00008" }
+  tags = { Name = "skills-sqs-grading-bastion-sg", ManagedBy = "Terraform", TaskId = "00008" }
 }
 resource "aws_vpc_security_group_ingress_rule" "eks_api_from_bastion" {
   security_group_id            = data.aws_eks_cluster.target.vpc_config[0].cluster_security_group_id
@@ -103,5 +103,5 @@ resource "aws_instance" "bastion" {
     dnf install -y docker
     systemctl enable --now docker
   EOT
-  tags                        = { Name = "skills-sqs-grading-bastion", ManagedBy = "Terraform", CandidateId = "00008" }
+  tags                        = { Name = "skills-sqs-grading-bastion", ManagedBy = "Terraform", TaskId = "00008" }
 }

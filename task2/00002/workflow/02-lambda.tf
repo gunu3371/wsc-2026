@@ -38,7 +38,7 @@ resource "aws_iam_role_policy" "lambda" {
 resource "aws_lambda_function" "processor" {
   function_name    = "wsc2026-student-score-function"
   role             = aws_iam_role.lambda.arn
-  runtime          = var.lambda_runtime
+  runtime          = local.input.lambda_runtime
   handler          = "index.handler"
   filename         = data.archive_file.processor.output_path
   source_code_hash = data.archive_file.processor.output_base64sha256
@@ -52,7 +52,7 @@ resource "aws_lambda_function" "processor" {
 resource "aws_lambda_function" "trigger" {
   function_name    = "wsc2026-student-score-trigger"
   role             = aws_iam_role.lambda.arn
-  runtime          = var.lambda_runtime
+  runtime          = local.input.lambda_runtime
   handler          = "trigger.handler"
   filename         = data.archive_file.trigger.output_path
   source_code_hash = data.archive_file.trigger.output_base64sha256

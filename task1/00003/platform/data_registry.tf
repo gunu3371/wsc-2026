@@ -3,7 +3,7 @@ resource "aws_dynamodb_table" "book" {
   name                        = "wsc2026-book-table"
   billing_mode                = "PAY_PER_REQUEST"
   hash_key                    = "client_id"
-  deletion_protection_enabled = !var.cleanup_mode
+  deletion_protection_enabled = !local.input.cleanup_mode
   attribute {
     name = "client_id"
     type = "S"
@@ -36,7 +36,7 @@ resource "aws_ecr_repository" "book" {
 
   name                 = "wsc2026-book-ecr"
   image_tag_mutability = "IMMUTABLE_WITH_EXCLUSION"
-  force_delete         = var.cleanup_mode
+  force_delete         = local.input.cleanup_mode
   image_tag_mutability_exclusion_filter {
     filter      = "latest"
     filter_type = "WILDCARD"

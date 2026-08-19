@@ -1,2 +1,0 @@
-log_generator_image = "123456789012.dkr.ecr.ap-northeast-1.amazonaws.com/log-generator@sha256:replace-me"
-kubernetes_version  = "1.35"

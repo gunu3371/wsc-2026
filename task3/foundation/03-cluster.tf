@@ -1,7 +1,7 @@
 resource "aws_eks_cluster" "main" {
-  name     = var.cluster_name
+  name     = local.input.cluster_name
   role_arn = aws_iam_role.eks_cluster.arn
-  version  = var.kubernetes_version
+  version  = local.input.kubernetes_version
 
   access_config {
     authentication_mode                         = "API_AND_CONFIG_MAP"
@@ -21,7 +21,7 @@ resource "aws_eks_cluster" "main" {
 
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${var.project_name}-workers"
+  node_group_name = "${local.input.project_name}-workers"
   node_role_arn   = aws_iam_role.eks_node.arn
   subnet_ids      = aws_subnet.private[*].id
   instance_types  = ["t3.medium"]
@@ -56,7 +56,7 @@ resource "aws_eks_addon" "pod_identity_agent" {
 }
 
 resource "aws_eks_access_entry" "additional_admin" {
-  for_each = var.additional_cluster_admin_principal_arns
+  for_each = local.input.additional_cluster_admin_principal_arns
 
   cluster_name  = aws_eks_cluster.main.name
   principal_arn = each.value
@@ -64,7 +64,7 @@ resource "aws_eks_access_entry" "additional_admin" {
 }
 
 resource "aws_eks_access_policy_association" "additional_admin" {
-  for_each = var.additional_cluster_admin_principal_arns
+  for_each = local.input.additional_cluster_admin_principal_arns
 
   cluster_name  = aws_eks_cluster.main.name
   principal_arn = each.value

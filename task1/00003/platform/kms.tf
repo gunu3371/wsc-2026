@@ -27,7 +27,7 @@ data "aws_iam_policy_document" "kms" {
     resources = ["*"]
     principals {
       type        = "Service"
-      identifiers = ["dynamodb.amazonaws.com", "ecr.amazonaws.com", "eks.amazonaws.com", "s3.amazonaws.com", "lambda.amazonaws.com", "logs.${var.region}.amazonaws.com"]
+      identifiers = ["dynamodb.amazonaws.com", "ecr.amazonaws.com", "eks.amazonaws.com", "s3.amazonaws.com", "lambda.amazonaws.com", "logs.${local.input.region}.amazonaws.com"]
     }
 
   }
@@ -38,7 +38,7 @@ data "aws_iam_policy_document" "kms" {
     resources = ["*"]
     principals {
       type        = "Service"
-      identifiers = ["dynamodb.amazonaws.com", "ecr.amazonaws.com", "eks.amazonaws.com", "s3.amazonaws.com", "lambda.amazonaws.com", "logs.${var.region}.amazonaws.com"]
+      identifiers = ["dynamodb.amazonaws.com", "ecr.amazonaws.com", "eks.amazonaws.com", "s3.amazonaws.com", "lambda.amazonaws.com", "logs.${local.input.region}.amazonaws.com"]
     }
     condition {
       test     = "Bool"
@@ -68,14 +68,14 @@ data "aws_iam_policy_document" "kms_bucket" {
     condition {
       test     = "StringEquals"
       variable = "kms:ViaService"
-      values   = ["s3.${var.region}.amazonaws.com"]
+      values   = ["s3.${local.input.region}.amazonaws.com"]
     }
     condition {
       test     = "ArnLike"
       variable = "kms:EncryptionContext:aws:s3:arn"
       values = [
-        "arn:${data.aws_partition.current.partition}:s3:::wsc2026-static-${local.suffix}-${lower(var.candidate_id)}-bucket",
-        "arn:${data.aws_partition.current.partition}:s3:::wsc2026-static-${local.suffix}-${lower(var.candidate_id)}-bucket/*"
+        "arn:${data.aws_partition.current.partition}:s3:::wsc2026-static-${local.suffix}-${lower(local.input.task_id)}-bucket",
+        "arn:${data.aws_partition.current.partition}:s3:::wsc2026-static-${local.suffix}-${lower(local.input.task_id)}-bucket/*"
       ]
     }
   }
@@ -94,7 +94,7 @@ data "aws_iam_policy_document" "kms_db" {
     condition {
       test     = "StringEquals"
       variable = "kms:ViaService"
-      values   = ["dynamodb.${var.region}.amazonaws.com"]
+      values   = ["dynamodb.${local.input.region}.amazonaws.com"]
     }
   }
 }

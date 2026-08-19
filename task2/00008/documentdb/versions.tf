@@ -9,9 +9,9 @@ provider "aws" {
   region = "ap-northeast-2"
   default_tags {
     tags = {
-      Project     = "national-skills-2026"
-      CandidateId = "00008"
-      ManagedBy   = "Terraform"
+      Project   = "national-skills-2026"
+      TaskId    = "00008"
+      ManagedBy = "Terraform"
     }
   }
 }

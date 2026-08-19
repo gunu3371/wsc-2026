@@ -75,7 +75,7 @@ locals {
     [OUTPUT]
         Name cloudwatch_logs
         Match kube.*
-        region ${var.region}
+        region ${local.input.region}
         log_group_name /wsc2026/book
         log_stream_prefix fluent-bit-
         auto_create_group true
@@ -91,7 +91,7 @@ locals {
 resource "kubernetes_config_map_v1_data" "fluent_bit_metrics" {
   metadata {
     name      = "wsc2026-fluent-bit"
-    namespace = var.namespace
+    namespace = local.input.namespace
   }
   data = {
     "fluent-bit.conf" = local.fluent_bit_config
@@ -106,7 +106,7 @@ resource "kubernetes_annotations" "fluent_bit_rollout" {
   kind        = "DaemonSet"
   metadata {
     name      = "wsc2026-fluent-bit"
-    namespace = var.namespace
+    namespace = local.input.namespace
   }
   template_annotations = {
     "wsc2026/log-metrics-config" = sha256(join("", [local.fluent_bit_config, file("${path.module}/../../assets/addons/duration.lua")]))
@@ -119,7 +119,7 @@ resource "kubernetes_annotations" "fluent_bit_rollout" {
 resource "kubernetes_service_v1" "fluent_bit_metrics" {
   metadata {
     name      = "wsc2026-fluent-bit-metrics"
-    namespace = var.namespace
+    namespace = local.input.namespace
     labels = {
       "wsc2026/metrics" = "fluent-bit"
     }
@@ -143,7 +143,7 @@ resource "kubernetes_manifest" "fluent_bit_service_monitor" {
     kind       = "ServiceMonitor"
     metadata = {
       name      = "wsc2026-fluent-bit-metrics"
-      namespace = var.namespace
+      namespace = local.input.namespace
       labels = {
         release = "wsc2026-prometheus"
       }
@@ -153,7 +153,7 @@ resource "kubernetes_manifest" "fluent_bit_service_monitor" {
         node = true
       }
       namespaceSelector = {
-        matchNames = [var.namespace]
+        matchNames = [local.input.namespace]
       }
       selector = {
         matchLabels = {

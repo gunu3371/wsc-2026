@@ -1,13 +1,13 @@
 resource "aws_vpc" "main" {
   cidr_block           = "172.16.0.0/16"
   enable_dns_hostnames = true
-  tags = merge(var.tags, {
+  tags = merge(local.input.tags, {
     Name = "wskorea26-vpc"
   })
 }
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
-  tags = merge(var.tags, {
+  tags = merge(local.input.tags, {
     Name = "book-igw"
   })
 }
@@ -17,7 +17,7 @@ resource "aws_subnet" "public" {
   availability_zone       = local.azs[count.index]
   cidr_block              = ["172.16.1.0/24", "172.16.2.0/24"][count.index]
   map_public_ip_on_launch = true
-  tags = merge(var.tags, {
+  tags = merge(local.input.tags, {
     Name = ["wskorea26-pub-subnet-c", "wskorea26-pub-subnet-d"][count.index], "kubernetes.io/role/elb" = "1"
   })
 }
@@ -26,7 +26,7 @@ resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.main.id
   availability_zone = local.azs[count.index]
   cidr_block        = ["172.16.201.0/24", "172.16.202.0/24"][count.index]
-  tags = merge(var.tags, {
+  tags = merge(local.input.tags, {
     Name = ["wskorea26-priv-subnet-c", "wskorea26-priv-subnet-d"][count.index], "kubernetes.io/role/internal-elb" = "1"
   })
 }
@@ -39,7 +39,7 @@ resource "aws_nat_gateway" "main" {
   count         = 2
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
-  tags = merge(var.tags, {
+  tags = merge(local.input.tags, {
     Name = "book-ngw-${count.index == 0 ? "c" : "d"}"
   })
 }
@@ -49,7 +49,7 @@ resource "aws_route_table" "public" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.main.id
   }
-  tags = merge(var.tags, {
+  tags = merge(local.input.tags, {
     Name = "wskorea26-public-rtb"
   })
 }
@@ -65,7 +65,7 @@ resource "aws_route_table" "private" {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.main[count.index].id
   }
-  tags = merge(var.tags, {
+  tags = merge(local.input.tags, {
     Name = "wskorea26-private-rtb-${count.index == 0 ? "c" : "d"}"
   })
 }
@@ -90,5 +90,5 @@ resource "aws_security_group" "environment" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = var.tags
+  tags = local.input.tags
 }

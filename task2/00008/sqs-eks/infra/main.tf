@@ -102,7 +102,7 @@ resource "aws_security_group" "cluster" {
 resource "aws_eks_cluster" "main" {
   name     = local.cluster_name
   role_arn = aws_iam_role.cluster.arn
-  version  = var.kubernetes_version
+  version  = local.input.kubernetes_version
   access_config {
     authentication_mode                         = "API_AND_CONFIG_MAP"
     bootstrap_cluster_creator_admin_permissions = true
@@ -112,7 +112,7 @@ resource "aws_eks_cluster" "main" {
     security_group_ids      = [aws_security_group.cluster.id]
     endpoint_public_access  = true
     endpoint_private_access = true
-    public_access_cidrs     = var.cluster_public_access_cidrs
+    public_access_cidrs     = local.input.cluster_public_access_cidrs
   }
   depends_on = [aws_iam_role_policy_attachment.cluster]
   tags       = { Name = local.cluster_name }
@@ -179,7 +179,7 @@ resource "aws_sqs_queue" "worker" {
 resource "aws_ecr_repository" "worker" {
   name                 = "skills-sqs-worker"
   image_tag_mutability = "IMMUTABLE"
-  force_delete         = var.cleanup_mode
+  force_delete         = local.input.cleanup_mode
   image_scanning_configuration { scan_on_push = true }
   tags = { Name = "skills-sqs-worker" }
 }
@@ -242,19 +242,6 @@ resource "aws_iam_role_policy" "karpenter" {
   ] })
 }
 
-variable "kubernetes_version" {
-  type    = string
-  default = "1.35"
-}
-variable "cluster_public_access_cidrs" {
-  type    = list(string)
-  default = ["0.0.0.0/0"]
-}
-variable "cleanup_mode" {
-  description = "ECR 이미지까지 함께 제거하는 실습 정리 모드입니다."
-  type        = bool
-  default     = false
-}
 output "cluster_name" { value = aws_eks_cluster.main.name }
 output "queue_url" { value = aws_sqs_queue.worker.url }
 output "queue_arn" { value = aws_sqs_queue.worker.arn }

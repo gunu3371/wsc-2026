@@ -1,5 +1,5 @@
 data "aws_ssm_parameter" "al2023" { name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64" }
-data "aws_eks_cluster" "target" { name = var.cluster_name }
+data "aws_eks_cluster" "target" { name = local.input.cluster_name }
 data "aws_kms_alias" "static_bucket" { name = "alias/wsc2026-bucket-kms" }
 data "aws_kms_alias" "grading_read" {
   for_each = toset([
@@ -25,15 +25,15 @@ resource "aws_iam_role_policy" "grading" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      { Effect = "Allow", Action = ["eks:DescribeCluster", "eks:AccessKubernetesApi", "eks:CreatePodIdentityAssociation", "eks:ListPodIdentityAssociations"], Resource = "arn:aws:eks:${var.region}:*:cluster/${var.cluster_name}" },
-      { Effect = "Allow", Action = ["eks:DescribePodIdentityAssociation", "eks:DeletePodIdentityAssociation"], Resource = "arn:aws:eks:${var.region}:*:podidentityassociation/${var.cluster_name}/*" },
+      { Effect = "Allow", Action = ["eks:DescribeCluster", "eks:AccessKubernetesApi", "eks:CreatePodIdentityAssociation", "eks:ListPodIdentityAssociations"], Resource = "arn:aws:eks:${local.input.region}:*:cluster/${local.input.cluster_name}" },
+      { Effect = "Allow", Action = ["eks:DescribePodIdentityAssociation", "eks:DeletePodIdentityAssociation"], Resource = "arn:aws:eks:${local.input.region}:*:podidentityassociation/${local.input.cluster_name}/*" },
       { Effect = "Allow", Action = ["ec2:DescribeManagedPrefixLists", "ec2:GetManagedPrefixListEntries"], Resource = "*" },
       { Effect = "Allow", Action = ["ec2:CreateSecurityGroup", "ec2:DeleteSecurityGroup", "ec2:AuthorizeSecurityGroupIngress", "ec2:RevokeSecurityGroupIngress", "ec2:RevokeSecurityGroupEgress", "ec2:CreateTags", "ec2:DescribeSecurityGroups", "ec2:DescribeNetworkInterfaces"], Resource = "*" },
-      { Effect = "Allow", Action = ["dynamodb:DescribeTable", "dynamodb:DescribeContinuousBackups", "dynamodb:DescribeTimeToLive", "dynamodb:ListTagsOfResource"], Resource = "arn:aws:dynamodb:${var.region}:*:table/wsc2026-book-table" },
+      { Effect = "Allow", Action = ["dynamodb:DescribeTable", "dynamodb:DescribeContinuousBackups", "dynamodb:DescribeTimeToLive", "dynamodb:ListTagsOfResource"], Resource = "arn:aws:dynamodb:${local.input.region}:*:table/wsc2026-book-table" },
       { Effect = "Allow", Action = ["ecr:GetAuthorizationToken"], Resource = "*" },
       { Effect = "Allow", Action = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:ListInstanceProfilesForRole", "iam:CreatePolicy", "iam:DeletePolicy", "iam:GetPolicy", "iam:GetPolicyVersion", "iam:ListPolicyVersions", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PassRole", "iam:CreateOpenIDConnectProvider", "iam:GetOpenIDConnectProvider", "iam:DeleteOpenIDConnectProvider"], Resource = "*" },
       { Effect = "Allow", Action = ["iam:CreatePolicyVersion", "iam:DeletePolicyVersion"], Resource = "arn:aws:iam::*:policy/wsc2026-book-pod-policy" },
-      { Effect = "Allow", Action = ["ecr:BatchCheckLayerAvailability", "ecr:CompleteLayerUpload", "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart"], Resource = "arn:aws:ecr:${var.region}:*:repository/wsc2026-book-ecr" },
+      { Effect = "Allow", Action = ["ecr:BatchCheckLayerAvailability", "ecr:CompleteLayerUpload", "ecr:InitiateLayerUpload", "ecr:PutImage", "ecr:UploadLayerPart"], Resource = "arn:aws:ecr:${local.input.region}:*:repository/wsc2026-book-ecr" },
       { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject"], Resource = "arn:aws:s3:::wsc2026-static-*-00003-bucket/grading/*" },
       { Effect = "Allow", Action = ["s3:GetObject"], Resource = "arn:aws:s3:::wsc2026-static-*-00003-bucket/static/*" },
       { Effect = "Allow", Action = ["ec2:DescribeVpcs", "ec2:DescribeSubnets", "ec2:DescribeInternetGateways", "ec2:DescribeNatGateways", "ec2:DescribeRouteTables", "ecr:DescribeRepositories", "ecr:ListImages", "eks:DescribeNodegroup", "kms:DescribeKey", "kms:GetKeyPolicy", "dynamodb:GetResourcePolicy", "s3:ListAllMyBuckets", "s3:GetBucketPublicAccessBlock", "s3:GetEncryptionConfiguration", "s3:ListBucket", "s3:GetObjectAttributes", "lambda:GetFunction", "elasticloadbalancing:DescribeLoadBalancers", "iam:ListAttachedRolePolicies", "iam:GetPolicy", "iam:GetPolicyVersion", "tag:GetResources", "cloudfront:GetDistribution", "wafv2:ListWebACLs", "wafv2:GetWebACL"], Resource = "*" }
@@ -46,7 +46,7 @@ resource "aws_iam_instance_profile" "ssm" {
 }
 resource "aws_security_group" "bastion" {
   name   = "wsc2026-grading-bastion-sg"
-  vpc_id = var.vpc_id
+  vpc_id = local.input.vpc_id
   egress {
     from_port   = 0
     to_port     = 0
@@ -64,12 +64,12 @@ resource "aws_vpc_security_group_ingress_rule" "eks_api_from_bastion" {
   description                  = "SSM grading bastion to private EKS API"
 }
 resource "aws_eks_access_entry" "bastion" {
-  cluster_name  = var.cluster_name
+  cluster_name  = local.input.cluster_name
   principal_arn = aws_iam_role.ssm.arn
   type          = "STANDARD"
 }
 resource "aws_eks_access_policy_association" "bastion_admin" {
-  cluster_name  = var.cluster_name
+  cluster_name  = local.input.cluster_name
   principal_arn = aws_iam_role.ssm.arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   access_scope { type = "cluster" }
@@ -91,7 +91,7 @@ resource "aws_kms_grant" "grading_read" {
 resource "aws_instance" "bastion" {
   ami                    = data.aws_ssm_parameter.al2023.value
   instance_type          = "t3.micro"
-  subnet_id              = var.subnet_id
+  subnet_id              = local.input.subnet_id
   vpc_security_group_ids = [aws_security_group.bastion.id]
   iam_instance_profile   = aws_iam_instance_profile.ssm.name
   user_data              = <<-EOF

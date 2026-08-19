@@ -15,10 +15,10 @@ resource "aws_iam_role_policy_attachment" "cluster" {
 resource "aws_eks_cluster" "main" {
 
   name     = "unicorn-eks-cluster"
-  version  = var.kubernetes_version
+  version  = local.input.kubernetes_version
   role_arn = aws_iam_role.cluster.arn
   vpc_config {
-    subnet_ids              = var.private_subnet_ids
+    subnet_ids              = local.input.private_subnet_ids
     endpoint_public_access  = false
     endpoint_private_access = true
   }
@@ -28,7 +28,7 @@ resource "aws_eks_cluster" "main" {
   }
   encryption_config {
     provider {
-      key_arn = var.platform_kms_arn
+      key_arn = local.input.platform_kms_arn
     }
     resources = ["secrets"]
   }
@@ -73,7 +73,7 @@ resource "aws_eks_node_group" "app" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "unicorn-app-ng"
   node_role_arn   = aws_iam_role.node.arn
-  subnet_ids      = var.private_subnet_ids
+  subnet_ids      = local.input.private_subnet_ids
   instance_types  = ["t3.medium"]
   scaling_config {
     min_size     = 2
@@ -93,7 +93,7 @@ resource "aws_eks_node_group" "addon" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "unicorn-addon-ng"
   node_role_arn   = aws_iam_role.node.arn
-  subnet_ids      = var.private_subnet_ids
+  subnet_ids      = local.input.private_subnet_ids
   instance_types  = ["t3.medium"]
   scaling_config {
     min_size     = 1

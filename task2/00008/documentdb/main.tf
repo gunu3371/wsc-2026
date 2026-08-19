@@ -52,7 +52,7 @@ resource "aws_security_group" "client" {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
-    cidr_blocks = var.client_allowed_cidrs
+    cidr_blocks = local.input.client_allowed_cidrs
   }
   egress {
     from_port   = 0
@@ -77,7 +77,7 @@ resource "aws_security_group" "docdb" {
 resource "aws_kms_key" "docdb" {
   description             = "skills-nosql DocumentDB encryption"
   enable_key_rotation     = true
-  deletion_window_in_days = var.cleanup_mode ? 7 : 30
+  deletion_window_in_days = local.input.cleanup_mode ? 7 : 30
   tags                    = { Name = "skills-nosql-docdb" }
 }
 resource "aws_kms_alias" "docdb" {
@@ -113,7 +113,7 @@ resource "aws_docdb_cluster" "main" {
   vpc_security_group_ids          = [aws_security_group.docdb.id]
   storage_encrypted               = true
   kms_key_id                      = aws_kms_key.docdb.arn
-  skip_final_snapshot             = var.cleanup_mode || var.skip_final_snapshot
+  skip_final_snapshot             = local.input.cleanup_mode || local.input.skip_final_snapshot
   enabled_cloudwatch_logs_exports = ["audit", "profiler"]
   tags                            = { Name = "skills-nosql-docdb-cluster" }
 }
@@ -128,7 +128,7 @@ resource "aws_docdb_cluster_instance" "main" {
 resource "aws_secretsmanager_secret" "docdb" {
   name                    = "skills-nosql-docdb-secret"
   kms_key_id              = aws_kms_key.docdb.arn
-  recovery_window_in_days = var.cleanup_mode ? 0 : 30
+  recovery_window_in_days = local.input.cleanup_mode ? 0 : 30
   tags                    = { Name = "skills-nosql-docdb-secret" }
 }
 resource "aws_secretsmanager_secret_version" "docdb" {
@@ -200,19 +200,6 @@ resource "aws_instance" "client" {
   depends_on = [aws_docdb_cluster_instance.main, aws_secretsmanager_secret_version.docdb]
 }
 
-variable "client_allowed_cidrs" {
-  type    = list(string)
-  default = ["0.0.0.0/0"]
-}
-variable "skip_final_snapshot" {
-  type    = bool
-  default = false
-}
-variable "cleanup_mode" {
-  description = "실습 리소스 정리 시 최종 스냅샷과 비밀 복구 대기를 생략하고 KMS 삭제 예약을 7일로 단축합니다."
-  type        = bool
-  default     = false
-}
 output "client_public_ip" { value = aws_instance.client.public_ip }
 output "docdb_endpoint" { value = aws_docdb_cluster.main.endpoint }
 

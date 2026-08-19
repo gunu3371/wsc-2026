@@ -29,14 +29,6 @@ data "aws_partition" "current" {
 
 }
 
-variable "order_processor_image" {
-  description = "Published Module3 image URI"
-  type        = string
-}
-variable "kubernetes_version" {
-  type    = string
-  default = "1.35"
-}
 
 resource "aws_vpc" "main" {
   cidr_block           = "10.83.0.0/16"
@@ -99,7 +91,7 @@ resource "aws_iam_role_policy_attachment" "cluster" {
 resource "aws_eks_cluster" "main" {
 
   name     = "skm-eks-cluster"
-  version  = var.kubernetes_version
+  version  = local.input.kubernetes_version
   role_arn = aws_iam_role.cluster.arn
   vpc_config {
     subnet_ids              = aws_subnet.public[*].id
@@ -388,7 +380,7 @@ resource "kubernetes_deployment_v1" "processor" {
         }
         container {
           name  = "order-processor"
-          image = var.order_processor_image
+          image = local.input.order_processor_image
           port {
             container_port = 8080
           }

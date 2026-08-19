@@ -1,0 +1,75 @@
+# 이 파일은 00003 과제 전체 root module의 공용 입력 예시입니다.
+# 과제 루트에서 terraform.tfvars로 복사하고 replace-* placeholder를 실제 값으로 바꿉니다.
+# 실제 terraform.tfvars에는 계정별 ARN과 endpoint가 들어가므로 Git에 커밋하지 않습니다.
+
+config = {
+  common = {
+    # 응시번호가 아니라 과제번호입니다.
+    task_id = "00003"
+    region  = "ap-northeast-2"
+
+    # null이면 현재 AWS SDK 기본 자격 증명 체인을 사용합니다.
+    aws_profile = null
+
+    tags = {
+      Project   = "wsc2026"
+      TaskId    = "00003"
+      ManagedBy = "Terraform"
+    }
+  }
+
+  modules = {
+    platform = {
+      # null이면 Terraform이 버킷 이름용 suffix를 생성합니다.
+      bucket_random_suffix = null
+
+      # platform과 addons가 사용할 이미지입니다. 공식 요구가 digest이면 @sha256 형식을 사용합니다.
+      image_uri = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr@sha256:replace-me"
+
+      # 외부 ALB 도메인이 정해진 뒤 교체합니다.
+      alb_domain_name = "example.invalid"
+
+      # 정상 기본값은 private endpoint입니다. public을 열면 아래 CIDR을 실제 접속 IP /32로 제한합니다.
+      eks_endpoint_public_access = false
+      eks_public_access_cidrs    = []
+
+      # 정상 적용은 false입니다. 보호 리소스 정리 절차에서만 true로 변경합니다.
+      cleanup_mode = false
+
+      # 빈 map이면 assets/platform의 공식 웹 자산을 사용합니다.
+      static_files = {}
+    }
+
+    # platform output만 사용하는 모듈도 구조 확장을 위해 빈 구역을 유지합니다.
+    addons = {}
+
+    extensions = {
+      observability_fix = {
+        namespace               = "observability"
+        grafana_service_account = "wsc2026-prometheus-grafana"
+        grafana_deployment      = "wsc2026-prometheus-grafana"
+      }
+      grading_bastion = {}
+    }
+  }
+
+  # platform 적용 후 아래 명령 결과를 복사합니다.
+  outputs = {
+    platform = {
+      # terraform -chdir=platform output -raw cluster_name
+      cluster_name = "replace-with-platform-output"
+
+      # terraform -chdir=platform output -raw book_table_name
+      book_table_name = "replace-with-platform-output"
+
+      # terraform -chdir=platform output -raw image_uri
+      image_uri = "replace-with-platform-output"
+
+      # terraform -chdir=platform output -raw vpc_id
+      vpc_id = "vpc-replace-me"
+
+      # terraform -chdir=platform output -json private_subnet_ids
+      private_subnet_ids = ["subnet-replace-a", "subnet-replace-b"]
+    }
+  }
+}

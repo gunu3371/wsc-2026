@@ -2,8 +2,8 @@ resource "kubernetes_annotations" "grafana_service_account" {
   api_version = "v1"
   kind        = "ServiceAccount"
   metadata {
-    name      = var.grafana_service_account
-    namespace = var.namespace
+    name      = local.input.grafana_service_account
+    namespace = local.input.namespace
   }
   annotations = {
     "eks.amazonaws.com/role-arn" = aws_iam_role.grafana_cloudwatch.arn
@@ -16,8 +16,8 @@ resource "kubernetes_annotations" "grafana_rollout" {
   api_version = "apps/v1"
   kind        = "Deployment"
   metadata {
-    name      = var.grafana_deployment
-    namespace = var.namespace
+    name      = local.input.grafana_deployment
+    namespace = local.input.namespace
   }
   template_annotations = {
     "wsc2026/grafana-cloudwatch-role-arn" = aws_iam_role.grafana_cloudwatch.arn
@@ -30,7 +30,7 @@ resource "kubernetes_annotations" "grafana_rollout" {
 resource "kubernetes_config_map_v1" "cloudwatch_datasource" {
   metadata {
     name      = "wsc2026-grafana-cloudwatch-datasource"
-    namespace = var.namespace
+    namespace = local.input.namespace
     labels = {
       grafana_datasource = "1"
     }
@@ -47,7 +47,7 @@ resource "kubernetes_config_map_v1" "cloudwatch_datasource" {
         isDefault = false
         jsonData = {
           authType      = "default"
-          defaultRegion = var.region
+          defaultRegion = local.input.region
         }
       }]
     })
@@ -57,7 +57,7 @@ resource "kubernetes_config_map_v1" "cloudwatch_datasource" {
 resource "kubernetes_config_map_v1" "dashboard" {
   metadata {
     name      = "wsc2026-grafana-dashboard-v2"
-    namespace = var.namespace
+    namespace = local.input.namespace
     labels = {
       grafana_dashboard = "1"
     }
@@ -66,7 +66,7 @@ resource "kubernetes_config_map_v1" "dashboard" {
     "wsc2026-grafana-dashboard.json" = templatefile("${path.module}/../../assets/addons/dashboard.json.tftpl", {
       account_id = data.aws_caller_identity.current.account_id
       partition  = data.aws_partition.current.partition
-      region     = var.region
+      region     = local.input.region
     })
   }
 }

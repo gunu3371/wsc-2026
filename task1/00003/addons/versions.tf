@@ -21,21 +21,21 @@ terraform {
 }
 
 provider "aws" {
-  region  = var.region
-  profile = var.aws_profile
+  region  = local.input.region
+  profile = local.input.aws_profile
   default_tags {
-    tags = merge(var.tags, {
-      Project     = "wsc2026"
-      CandidateId = var.candidate_id
-      ManagedBy   = "Terraform"
+    tags = merge(local.input.tags, {
+      Project   = "wsc2026"
+      TaskId    = local.input.task_id
+      ManagedBy = "Terraform"
     })
   }
 }
 data "aws_eks_cluster" "main" {
-  name = var.cluster_name
+  name = local.input.cluster_name
 }
 data "aws_eks_cluster_auth" "main" {
-  name = var.cluster_name
+  name = local.input.cluster_name
 }
 provider "kubernetes" {
   host                   = data.aws_eks_cluster.main.endpoint
@@ -50,48 +50,13 @@ provider "helm" {
   }
 }
 
-variable "region" {
-  type    = string
-  default = "ap-northeast-2"
-}
-variable "aws_profile" {
-  type    = string
-  default = null
-}
-variable "cluster_name" {
-  type    = string
-  default = "wsc2026-eks-cluster"
-}
-variable "table_name" {
-  type    = string
-  default = "wsc2026-book-table"
-}
-variable "image_uri" {
-  type = string
-}
-variable "vpc_id" {
-  type = string
-}
-variable "private_subnet_ids" {
-  type = list(string)
-}
-variable "candidate_id" {
-  description = "Candidate identifier applied to AWS and Kubernetes-created resources."
-  type        = string
-  default     = "00003"
-}
-variable "tags" {
-  description = "Tags for AWS resources created by this root module."
-  type        = map(string)
-  default     = {}
-}
 
 locals {
   ingress_tags = merge({
-    Project     = "wsc2026"
-    CandidateId = var.candidate_id
-    ManagedBy   = "Terraform"
-  }, var.tags)
+    Project   = "wsc2026"
+    TaskId    = local.input.task_id
+    ManagedBy = "Terraform"
+  }, local.input.tags)
 }
 
 data "aws_caller_identity" "current" {
@@ -104,7 +69,7 @@ data "tls_certificate" "eks" {
   url = data.aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
 data "aws_dynamodb_table" "book" {
-  name = var.table_name
+  name = local.input.table_name
 }
 data "aws_iam_policy_document" "pod_assume" {
   statement {
@@ -125,7 +90,7 @@ resource "aws_iam_policy" "pod" {
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Action = ["dynamodb:PutItem"], Resource = data.aws_dynamodb_table.book.arn
       }, {
-      Effect = "Allow", Action = ["kms:Decrypt"], Resource = "arn:${data.aws_partition.current.partition}:kms:${var.region}:${data.aws_caller_identity.current.account_id}:key/*"
+      Effect = "Allow", Action = ["kms:Decrypt"], Resource = "arn:${data.aws_partition.current.partition}:kms:${local.input.region}:${data.aws_caller_identity.current.account_id}:key/*"
       Condition = {
         StringEquals = { "kms:ResourceAliases" = "alias/wsc2026-db-kms" }
       }
@@ -137,7 +102,7 @@ resource "aws_iam_role_policy_attachment" "pod" {
   policy_arn = aws_iam_policy.pod.arn
 }
 resource "aws_eks_pod_identity_association" "book" {
-  cluster_name    = var.cluster_name
+  cluster_name    = local.input.cluster_name
   namespace       = kubernetes_namespace_v1.book.metadata[0].name
   service_account = kubernetes_service_account_v1.book.metadata[0].name
   role_arn        = aws_iam_role.pod.arn

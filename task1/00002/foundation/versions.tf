@@ -11,12 +11,12 @@ terraform {
 }
 provider "aws" {
   region  = "ap-northeast-2"
-  profile = var.aws_profile
+  profile = local.input.aws_profile
   default_tags {
     tags = merge({
-      Project     = "wskorea26-concert"
-      CandidateId = var.candidate_id
-      ManagedBy   = "Terraform"
-    }, var.tags)
+      Project   = "wskorea26-concert"
+      TaskId    = local.input.task_id
+      ManagedBy = "Terraform"
+    }, local.input.tags)
   }
 }

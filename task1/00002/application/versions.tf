@@ -14,17 +14,17 @@ terraform {
 }
 provider "aws" {
   region  = "ap-northeast-2"
-  profile = var.aws_profile
+  profile = local.input.aws_profile
 }
 provider "kubernetes" {
-  host                   = var.cluster_endpoint
-  cluster_ca_certificate = base64decode(var.cluster_ca)
+  host                   = local.input.cluster_endpoint
+  cluster_ca_certificate = base64decode(local.input.cluster_ca)
   token                  = data.aws_eks_cluster_auth.main.token
 }
 provider "helm" {
   kubernetes {
-    host                   = var.cluster_endpoint
-    cluster_ca_certificate = base64decode(var.cluster_ca)
+    host                   = local.input.cluster_endpoint
+    cluster_ca_certificate = base64decode(local.input.cluster_ca)
     token                  = data.aws_eks_cluster_auth.main.token
   }
 }

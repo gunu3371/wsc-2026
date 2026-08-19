@@ -15,7 +15,7 @@ resource "kubernetes_config_map_v1" "book" {
     namespace = kubernetes_namespace_v1.book.metadata[0].name
   }
   data = {
-    AWS_REGION = var.region, TABLE_NAME = var.table_name
+    AWS_REGION = local.input.region, TABLE_NAME = local.input.table_name
   }
 }
 
@@ -51,7 +51,7 @@ resource "helm_release" "lbc" {
   chart      = "aws-load-balancer-controller"
   version    = "1.15.0"
   values = [yamlencode({
-    clusterName = var.cluster_name, region = var.region, vpcId = var.vpc_id, serviceAccount = {
+    clusterName = local.input.cluster_name, region = local.input.region, vpcId = local.input.vpc_id, serviceAccount = {
       create = false, name = kubernetes_service_account_v1.lbc.metadata[0].name
     }
   })]
@@ -62,7 +62,7 @@ data "aws_ec2_managed_prefix_list" "cloudfront" {
 }
 resource "aws_security_group" "alb" {
   name   = "wsc2026-app-alb-sg"
-  vpc_id = var.vpc_id
+  vpc_id = local.input.vpc_id
   ingress {
     from_port       = 80
     to_port         = 80
@@ -127,7 +127,7 @@ resource "kubernetes_deployment_v1" "book" {
         container {
 
           name              = "book"
-          image             = var.image_uri
+          image             = local.input.image_uri
           image_pull_policy = "IfNotPresent"
           port {
             name           = "http"

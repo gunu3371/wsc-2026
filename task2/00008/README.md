@@ -21,32 +21,37 @@
 
 각 디렉터리는 독립 Terraform state를 사용한다. EKS는 `infra → controllers → workloads` 순서로 적용하고 반대 순서로 제거한다.
 
-## 검증과 적용
+## 단일 변수 파일과 검증
 
-각 root module에서 다음을 실행한다.
+과제 루트에서 `Copy-Item terraform.tfvars.example terraform.tfvars`를 한 번 실행한다. 독립 서비스는 자신의 `config.modules` 구역을 사용한다. SQS/EKS는 infra 적용 후 `terraform -chdir=sqs-eks/infra output` 결과를 `config.outputs.sqs_eks_infra`에 복사한다.
 
 ```powershell
-terraform init -input=false
-terraform fmt -check
-terraform validate
-terraform plan -input=false "-var-file=terraform.tfvars"
-terraform apply -input=false "-var-file=terraform.tfvars"
+terraform -chdir=cloud-event init -input=false
+terraform -chdir=cloud-event validate
+terraform -chdir=cloud-event plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=documentdb plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=lattice plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=sqs-eks/infra plan -input=false -var-file=../../terraform.tfvars
+terraform -chdir=sqs-eks/addons/controllers plan -input=false -var-file=../../../terraform.tfvars
+terraform -chdir=sqs-eks/addons/workloads plan -input=false -var-file=../../../terraform.tfvars
+terraform -chdir=sqs-eks/extensions/grading-bastion plan -input=false -var-file=../../../terraform.tfvars
 ```
 
-실제 tfvars는 커밋하지 않으며, 제공된 `terraform.tfvars.example`을 복사해 사용한다.
+실제 tfvars는 커밋하지 않는다. apply는 모든 plan을 검토한 뒤 사용자가 명시적으로 요청한 경우에만 같은 `-var-file` 인수로 실행한다.
 
 ## 정리
 
 CloudTrail과 SQS producer를 먼저 중지한 뒤 다음 순서로 제거한다.
 
 ```powershell
-terraform -chdir=task2/sqs-eks/addons/workloads destroy -auto-approve
-terraform -chdir=task2/sqs-eks/addons/controllers destroy -auto-approve
-terraform -chdir=task2/sqs-eks/extensions/grading-bastion destroy -auto-approve
-terraform -chdir=task2/sqs-eks/infra destroy -auto-approve -var='cleanup_mode=true'
-terraform -chdir=task2/cloud-event destroy -auto-approve -var='cleanup_mode=true'
-terraform -chdir=task2/lattice destroy -auto-approve
-terraform -chdir=task2/documentdb destroy -auto-approve -var='cleanup_mode=true'
+terraform -chdir=sqs-eks/addons/workloads destroy -var-file=../../../terraform.tfvars
+terraform -chdir=sqs-eks/addons/controllers destroy -var-file=../../../terraform.tfvars
+terraform -chdir=sqs-eks/extensions/grading-bastion destroy -var-file=../../../terraform.tfvars
+# terraform.tfvars의 해당 cleanup_mode를 true로 변경한 뒤 아래 기반 모듈을 정리한다.
+terraform -chdir=sqs-eks/infra destroy -var-file=../../terraform.tfvars
+terraform -chdir=cloud-event destroy -var-file=../terraform.tfvars
+terraform -chdir=lattice destroy -var-file=../terraform.tfvars
+terraform -chdir=documentdb destroy -var-file=../terraform.tfvars
 ```
 
 `cleanup_mode=true`은 실습 정리 전용이다. ECR 이미지를 함께 삭제하고, CloudTrail S3 객체를 비우며, DocumentDB 최종 스냅샷과 Secrets Manager 복구 대기를 생략한다. DocumentDB KMS 키는 7일 삭제 예약 상태로 남으므로 최종 삭제일을 AWS API로 확인한다.
