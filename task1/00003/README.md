@@ -45,3 +45,11 @@ terraform -chdir=task1/platform destroy -auto-approve -var-file=terraform.tfvars
 ```
 
 `cleanup_mode` 기본값은 `false`다. `true`일 때만 DynamoDB 삭제 보호를 해제하고 S3의 모든 객체 버전 및 ECR 이미지를 제거할 수 있다. KMS 키는 AWS 정책에 따라 7일 삭제 예약 상태로 남는다. 정리 후 state, EKS/VPC/ELB/ENI/NAT/EIP, S3/ECR/DynamoDB/Lambda, CloudWatch Log Group, IAM, KMS 예약 상태를 AWS API로 교차 확인한다.
+
+## Terraform 입력 자산
+
+Terraform 입력 자산은 과제 루트 `assets/`에서 관리한다.
+
+- `platform`은 `assets/platform/`의 정적 웹 파일과 Lambda 소스를 사용한다.
+- `addons`와 `extensions/observability-fix`는 `assets/addons/`의 Grafana dashboard template, alert manifest, Fluent Bit Lua 스크립트를 공유한다.
+- 공식 원본은 변경하지 않으며, Lambda ZIP 등 Terraform 생성 산출물은 `assets/`에 넣지 않는다.

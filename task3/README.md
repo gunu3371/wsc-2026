@@ -178,3 +178,10 @@ terraform destroy -input=false
 application을 먼저 제거해야 nginx Service가 만든 NLB와 ENI가 VPC보다 먼저 삭제됩니다. foundation의 S3/ECR은 실습 정리를 위해 `force_destroy`이며, Secrets Manager secret은 즉시 삭제 설정입니다. 이 구현은 customer-managed KMS key를 만들지 않습니다.
 
 destroy 후 각 state의 `terraform state list`가 비어 있는지 확인하고, AWS API에서 EKS, RDS, NLB, ECR, S3, NAT Gateway/EIP, ENI, CloudFront, WAF, CloudWatch, IAM 잔존 여부를 직접 확인합니다. 다른 응시번호·프로젝트의 리소스는 삭제하지 않습니다.
+
+## Terraform 입력 자산
+
+공용 공식 바이너리 패키징 Dockerfile은 `assets/shared/Dockerfile.binary`에 둔다. 향후 특정 root module만 사용하는 입력 파일은 `assets/foundation/`, `assets/application/`, `assets/extensions/<이름>/`처럼 소유 모듈 경로에 둔다.
+
+- 공식 지급 바이너리 자체는 수정하지 않는다.
+- Terraform이 생성하는 이미지·ZIP·plan 파일은 `assets/`에 두거나 커밋하지 않는다.

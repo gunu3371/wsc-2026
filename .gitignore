@@ -1,13 +1,28 @@
 # Terraform local working artifacts
 **/.terraform/
-*.tfstate
-*.tfstate.*
-*.tfplan
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfplan
+**/*.plan
 **/terraform.tfvars
 **/*.auto.tfvars
+**/terraform.tfvars.json
+**/*.auto.tfvars.json
 
-# Generated Lambda archive for 00003
-00003/task1/platform/book_get.zip
+# Generated Terraform archives. Keep this list explicit so official ZIP assets
+# outside these module output paths remain trackable.
+/task1/00002/foundation/book.zip
+/task1/00003/extensions/grading-bastion/addons-min.zip
+/task1/00003/extensions/grading-bastion/addons.zip
+/task1/00003/platform/book_get.zip
+/task1/00007/addons/lambda.zip
+/task2/00002/cloud-event/remediation.zip
+/task2/00002/msk/alert-consumer.zip
+/task2/00002/msk/consumer.zip
+/task2/00002/workflow/processor.zip
+/task2/00002/workflow/trigger.zip
+/task2/00007/nosql/audit.zip
+/task2/00008/cloud-event/remediation.zip
 
-# Temporary grading-bastion addon package (over 100 MiB)
-00003/task1/extensions/grading-bastion/addons.zip
+# Provider dependency locks are intentionally tracked.
+!.terraform.lock.hcl

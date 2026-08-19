@@ -131,3 +131,11 @@ terraform destroy -var-file=terraform.tfvars
 2과제는 producer와 이벤트 생산을 먼저 중지하고 `msk`, `cloud-event`, `analytics`, `workflow`를 각 root에서 독립 destroy한다. S3는 해당 과제 버킷만 비우며, CloudTrail과 producer가 더 이상 쓰지 않는지 먼저 확인한다. MSK의 VPC Lambda를 삭제한 직후에는 AWS가 Lambda ENI를 비동기로 회수하므로, security group 또는 subnet 삭제가 `DependencyViolation`으로 대기하면 ENI가 `available` 또는 삭제될 때까지 기다린 뒤 같은 `terraform destroy`를 재실행한다. `in-use` 상태의 AWS 관리 ENI를 강제로 삭제하지 않는다. KMS 키는 즉시 삭제되지 않고 AWS가 허용하는 대기 기간 뒤 삭제된다.
 
 마지막으로 각 state의 관리 리소스 수가 0인지 확인하고, 해당 리전의 EC2/VPC/ENI/ELB/EKS/MSK/Lambda/DynamoDB/S3/CloudTrail/EventBridge/Config/SNS/CloudWatch/IAM/KMS를 이름과 태그로 교차 확인한다.
+
+## Terraform 입력 자산
+
+Terraform 입력 자산은 과제 루트 `assets/`에서만 관리한다. `foundation`은 `assets/foundation/`의 웹 파일, Lambda 코드, 제공 바이너리, Kubernetes manifest와 모니터링 대시보드를 사용한다. `grading-bastion`도 foundation 디렉터리가 아니라 같은 자산 경로를 참조한다.
+
+- 공식 원본 `37_클라우드컴퓨팅/...`는 이동하거나 수정하지 않는다.
+- Lambda ZIP과 같이 Terraform 실행 중 생성되는 파일은 각 root module에 생성되며 `assets/`에 커밋하지 않는다.
+- 자산 이동 후에는 원본 Git blob hash 또는 SHA-256으로 바이트 동일성을 확인한다.

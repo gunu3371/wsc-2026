@@ -52,3 +52,14 @@ terraform -chdir=task2/documentdb destroy -auto-approve -var='cleanup_mode=true'
 `cleanup_mode=true`은 실습 정리 전용이다. ECR 이미지를 함께 삭제하고, CloudTrail S3 객체를 비우며, DocumentDB 최종 스냅샷과 Secrets Manager 복구 대기를 생략한다. DocumentDB KMS 키는 7일 삭제 예약 상태로 남으므로 최종 삭제일을 AWS API로 확인한다.
 
 정리 후에는 모든 state의 리소스 수와 EKS, VPC, EC2/ENI, NAT/EIP, ECR, SQS, DocumentDB, VPC Lattice, CloudTrail, Lambda, IAM, CloudWatch Logs, KMS 상태를 각 서비스 API로 확인한다. 자세한 시행착오와 재발 방지책은 `LESSONS_LEARNED.md`에 기록했다.
+
+## Terraform 입력 자산
+
+Terraform 입력 자산은 과제 루트 `assets/`에서 관리한다.
+
+- `cloud-event`: `assets/cloud-event/`
+- `documentdb`: `assets/documentdb/`
+- `lattice`: `assets/lattice/`
+- `sqs-eks/addons/workloads`: `assets/sqs-eks/addons/workloads/`
+
+공식 원본은 수정하지 않는다. Lambda ZIP 등 Terraform 실행 중 생성되는 산출물은 각 module에만 생성하며 `assets/`에 저장하지 않는다.

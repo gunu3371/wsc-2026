@@ -26,3 +26,11 @@
 1과제는 `foundation → cluster → addons` 순서다. addons는 private EKS API에 접근 가능한 CloudShell에서 foundation/cluster output과 `app_image`을 전달해 실행한다. 제공 Dockerfile·Python·HTML은 `assets/`에서 그대로 사용한다. 원본 `mark.sh`, `mark1.sh`~`mark4.sh`는 수정하지 않고 CloudShell에서 최대 3회만 실행·수정한다.
 
 삭제는 `task1/addons → cluster → foundation` 순서이며 2과제는 각 독립 module을 제거한다. 데이터 생산자를 먼저 중지하고 AWS API로 S3/CloudWatch/EKS/ENI/NAT/EIP/ELB/IAM/KMS alias의 잔존 여부 및 KMS 삭제 예약일을 확인한다.
+
+## Terraform 입력 자산
+
+Terraform 입력 자산은 과제 루트 `assets/`에서 관리한다.
+
+- `foundation`은 `assets/foundation/index.html`을 사용한다.
+- `addons`는 `assets/addons/`의 Dockerfile, 애플리케이션과 Lambda 소스를 사용한다.
+- 공식 배포 자산은 원본 폴더에서 수정하지 않고, Terraform용 사본을 이동할 때만 hash를 대조한다. Terraform이 생성하는 ZIP은 `assets/`에 넣지 않는다.
