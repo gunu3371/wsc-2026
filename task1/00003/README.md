@@ -1,4 +1,4 @@
-# 00003 Terraform 구현 및 운영 안내
+# 1과제 00003 Terraform 구현 및 운영 안내
 
 ## 기준 자료
 
@@ -11,10 +11,10 @@
 
 | root module | 역할 | state |
 | --- | --- | --- |
-| `task1/platform` | VPC, NAT, KMS, EKS, DynamoDB, ECR, S3, Lambda, CloudFront, WAF | 독립 |
-| `task1/addons` | Kubernetes 애플리케이션, AWS Load Balancer Controller, Helm 관측성 구성 | 독립 |
-| `task1/extensions/observability-fix` | Grafana CloudWatch 연결, 대시보드, 알림, Fluent Bit metric 보완 | 독립 |
-| `task1/extensions/grading-bastion` | 채점 전용 SSM 베스천 | 독립, 필요할 때만 생성 |
+| `platform` | VPC, NAT, KMS, EKS, DynamoDB, ECR, S3, Lambda, CloudFront, WAF | 독립 |
+| `addons` | Kubernetes 애플리케이션, AWS Load Balancer Controller, Helm 관측성 구성 | 독립 |
+| `extensions/observability-fix` | Grafana CloudWatch 연결, 대시보드, 알림, Fluent Bit metric 보완 | 독립 |
+| `extensions/grading-bastion` | 채점 전용 SSM 베스천 | 독립, 필요할 때만 생성 |
 
 같은 디렉터리의 모든 `.tf` 파일은 하나의 root module과 state를 이룬다. 각 root module의 state를 보존해야 하며, 특히 `addons` state 없이 platform을 먼저 삭제하면 Kubernetes가 생성한 ELB와 IAM 리소스가 남을 수 있다.
 
@@ -28,15 +28,15 @@
 Copy-Item terraform.tfvars.example terraform.tfvars
 terraform -chdir=platform init -input=false
 terraform -chdir=platform validate
-terraform -chdir=platform plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=platform plan -input=false "-var-file=../terraform.tfvars"
 ```
 
 platform 적용 후 `terraform -chdir=platform output`으로 값을 확인해 같은 `terraform.tfvars`의 `outputs.platform`을 갱신한다. 이후 addons와 extension을 검증한다.
 
 ```powershell
-terraform -chdir=addons plan -input=false -var-file=../terraform.tfvars
-terraform -chdir=extensions/observability-fix plan -input=false -var-file=../../terraform.tfvars
-terraform -chdir=extensions/grading-bastion plan -input=false -var-file=../../terraform.tfvars
+terraform -chdir=addons plan -input=false "-var-file=../terraform.tfvars"
+terraform -chdir=extensions/observability-fix plan -input=false "-var-file=../../terraform.tfvars"
+terraform -chdir=extensions/grading-bastion plan -input=false "-var-file=../../terraform.tfvars"
 ```
 
 적용 순서는 `platform → addons → observability-fix`이며, addons와 extension은 private EKS endpoint에 접근 가능한 CloudShell 또는 VPC 내부 환경에서 실행한다.
@@ -46,11 +46,11 @@ terraform -chdir=extensions/grading-bastion plan -input=false -var-file=../../te
 정리 순서는 `observability-fix → addons → platform`이다. S3 버전 객체, ECR 이미지 및 DynamoDB 삭제 보호까지 처리하려면 platform에서 아래 두 단계를 모두 실행한다.
 
 ```powershell
-terraform -chdir=extensions/observability-fix destroy -var-file=../../terraform.tfvars
-terraform -chdir=addons destroy -var-file=../terraform.tfvars
+terraform -chdir=extensions/observability-fix destroy "-var-file=../../terraform.tfvars"
+terraform -chdir=addons destroy "-var-file=../terraform.tfvars"
 # terraform.tfvars의 config.modules.platform.cleanup_mode를 true로 변경한 뒤 실행한다.
-terraform -chdir=platform apply -var-file=../terraform.tfvars
-terraform -chdir=platform destroy -var-file=../terraform.tfvars
+terraform -chdir=platform apply "-var-file=../terraform.tfvars"
+terraform -chdir=platform destroy "-var-file=../terraform.tfvars"
 ```
 
 `cleanup_mode` 기본값은 `false`다. `true`일 때만 DynamoDB 삭제 보호를 해제하고 S3의 모든 객체 버전 및 ECR 이미지를 제거할 수 있다. KMS 키는 AWS 정책에 따라 7일 삭제 예약 상태로 남는다. 정리 후 state, EKS/VPC/ELB/ENI/NAT/EIP, S3/ECR/DynamoDB/Lambda, CloudWatch Log Group, IAM, KMS 예약 상태를 AWS API로 교차 확인한다.

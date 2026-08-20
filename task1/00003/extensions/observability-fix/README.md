@@ -12,6 +12,6 @@ EKS API가 private-only이면 CIDR을 제한한 public endpoint를 배포 시간
 ```powershell
 terraform init -input=false
 terraform validate
-terraform plan -input=false -var-file=../../terraform.tfvars
-terraform apply -input=false -var-file=../../terraform.tfvars
+terraform plan -input=false "-var-file=../../terraform.tfvars"
+terraform apply -input=false "-var-file=../../terraform.tfvars"
 ```

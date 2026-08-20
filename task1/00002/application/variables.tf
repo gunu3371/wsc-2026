@@ -8,7 +8,6 @@ variable "config" {
     })
     modules = object({
       application = object({
-        book_image_uri         = string
         grafana_admin_password = optional(string, "$korea26!!")
       })
     })

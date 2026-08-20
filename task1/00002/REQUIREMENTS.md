@@ -6,7 +6,7 @@
 |---|---|---|
 | 1 Network | ap-northeast-2, VPC `172.16.0.0/16`, public `1/24·2/24`, private `201/24·202/24`, AZ c/d, AZ별 NAT | `task1/foundation/01-network.tf` |
 | 2 S3 | `wskorea26-concert-bucket-<응시번호>`, `web/main/index.html`, `web/main/main.jpeg`, KMS alias `wskorea26-s3-key`, public 차단 | `task1/foundation/02-static-storage.tf` |
-| 3 ECR | `wskorea26-book-repo`, private, scan on push, KMS, `stable` 이미지 | `task1/foundation/03-container-registry.tf`, `Dockerfile`, `push-image.sh` |
+| 3 ECR | `wskorea26-book-repo`, private, scan on push, KMS, `stable` 이미지 | `foundation/03-container-registry.tf`, `assets/shared/book-image/`, `extensions/image-build/` |
 | 4 DynamoDB | `wskorea26-data-table`, PK `client_id(S)`, 삭제 방지, KMS alias `wskorea26-dynamodb-key` | `task1/foundation/04-database.tf` |
 | 5 EKS | `wskorea26-cluster` 1.35, private endpoint, 전체 control-plane log, secrets KMS, private c/d, addon/app t3.medium nodegroup와 label/taint | `task1/foundation/05-eks.tf`, `task1/application/01-application.tf` |
 | 6 Lambda | `wskorea26-book-lambda`, Python 3.14, `TABLE_NAME`, GET query와 400/200 처리 | `task1/foundation/06-lambda.tf`, `task1/foundation/lambda/book.py` |

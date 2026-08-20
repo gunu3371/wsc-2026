@@ -1,4 +1,4 @@
-# 00002 2과제 Terraform 구현
+# 2과제 00002 Terraform 구현
 
 ## 기준 자료와 구성
 
@@ -34,10 +34,10 @@
 ```powershell
 terraform -chdir=workflow init -input=false
 terraform -chdir=workflow validate
-terraform -chdir=workflow plan -input=false -var-file=../terraform.tfvars
-terraform -chdir=analytics plan -input=false -var-file=../terraform.tfvars
-terraform -chdir=cloud-event plan -input=false -var-file=../terraform.tfvars
-terraform -chdir=msk plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=workflow plan -input=false "-var-file=../terraform.tfvars"
+terraform -chdir=analytics plan -input=false "-var-file=../terraform.tfvars"
+terraform -chdir=cloud-event plan -input=false "-var-file=../terraform.tfvars"
+terraform -chdir=msk plan -input=false "-var-file=../terraform.tfvars"
 ```
 
 모든 plan 검토 후에만 사용자 요청에 따라 apply한다. `workflow`, `analytics`, `cloud-event`, `msk`는 서로 독립적으로 plan/apply/destroy할 수 있다.

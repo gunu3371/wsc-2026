@@ -127,3 +127,25 @@ resource "aws_eks_addon" "coredns" {
   resolve_conflicts_on_update = "OVERWRITE"
   depends_on                  = [aws_eks_node_group.node]
 }
+
+resource "aws_eks_access_entry" "additional_admin" {
+  for_each = local.input.additional_cluster_admin_principal_arns
+
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = each.value
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "additional_admin" {
+  for_each = local.input.additional_cluster_admin_principal_arns
+
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = each.value
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+
+  depends_on = [aws_eks_access_entry.additional_admin]
+}

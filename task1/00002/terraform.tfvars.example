@@ -29,13 +29,16 @@ config = {
 
       # 정상 적용은 true입니다. destroy 전 보호 해제가 필요할 때만 false로 바꿉니다.
       dynamodb_deletion_protection_enabled = true
+
+      # CloudShell 채점 principal이 foundation 생성 principal과 다를 때만 추가합니다.
+      # CloudShell에서 `aws sts get-caller-identity --query Arn --output text`로 확인하되,
+      # root ARN이나 arn:aws:sts::... 세션 ARN은 넣지 않습니다.
+      # assumed-role이면 대응하는 영구 arn:aws:iam::...:role/... ARN을 사용합니다.
+      # 같은 principal로 foundation을 생성했다면 빈 목록을 유지합니다.
+      additional_cluster_admin_principal_arns = []
     }
 
     application = {
-      # foundation ECR에 이미지를 push한 뒤 실제 URI로 변경합니다.
-      # 문제지나 README가 digest를 요구하면 :tag 대신 @sha256:<digest>를 사용합니다.
-      book_image_uri = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wskorea26-book-repo:stable"
-
       # 예시 비밀번호를 실환경 비밀로 사용하지 말고 실제 tfvars를 별도로 보호합니다.
       grafana_admin_password = "replace-with-secure-password"
     }
@@ -43,6 +46,12 @@ config = {
     extensions = {
       grading_bastion = {
         instance_type = "t3.micro"
+      }
+
+      # Windows 대회 환경에서는 Docker/WSL 대신 CodeBuild가 이미지를 빌드합니다.
+      # 정상값 10분을 유지합니다. 빌드가 실제로 오래 걸릴 때만 5~60분으로 조정합니다.
+      image_build = {
+        build_timeout_minutes = 10
       }
     }
   }

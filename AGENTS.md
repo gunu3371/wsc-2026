@@ -123,7 +123,7 @@ taskN/
 - 추가 과제 extension만 독립적으로 plan/apply/destroy하는 방법
 - KMS처럼 즉시 삭제할 수 없는 리소스의 동작
 
-README의 명령은 해당 디렉터리에서 그대로 실행 가능한 형태여야 한다. Windows 전용 경로와 Bash 명령이 섞일 때는 PowerShell/WSL 실행 위치를 분명히 적는다.
+README의 명령은 해당 디렉터리에서 그대로 실행 가능한 형태여야 한다. Windows 전용 경로와 Bash 명령이 섞일 때는 PowerShell/WSL 실행 위치를 분명히 적는다. PowerShell에서 상대 경로를 사용하는 Terraform 변수 파일 인수는 `"-var-file=../terraform.tfvars"`처럼 `-var-file=...` 전체를 큰따옴표로 감싸 Windows native argument 전달 오류를 방지한다.
 
 ## 5. 로컬 Terraform 검증
 

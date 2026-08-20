@@ -33,7 +33,7 @@ resource "kubernetes_deployment_v1" "book" {
         }
         container {
           name  = "book"
-          image = local.input.book_image_uri
+          image = "${data.aws_ecr_repository.book.repository_url}:stable"
           port {
             container_port = 8080
           }

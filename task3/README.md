@@ -76,7 +76,7 @@ PowerShell에서:
 terraform -chdir=foundation fmt -check
 terraform -chdir=foundation init -input=false
 terraform -chdir=foundation validate
-terraform -chdir=foundation plan -input=false -var-file=../terraform.tfvars -out=foundation.tfplan
+terraform -chdir=foundation plan -input=false "-var-file=../terraform.tfvars" -out=foundation.tfplan
 terraform -chdir=foundation apply foundation.tfplan
 aws sts get-caller-identity
 terraform -chdir=foundation output
@@ -118,7 +118,7 @@ foundation output의 `cluster_name`, `database_secret_arn`, `image_bucket_name`,
 terraform -chdir=application fmt -check
 terraform -chdir=application init -input=false
 terraform -chdir=application validate
-terraform -chdir=application plan -input=false -var-file=../terraform.tfvars -out=application.tfplan
+terraform -chdir=application plan -input=false "-var-file=../terraform.tfvars" -out=application.tfplan
 terraform -chdir=application apply application.tfplan
 terraform -chdir=application output -raw endpoint
 ```
@@ -147,7 +147,7 @@ foundation output `node_role_name`과 `cluster_name`을 같은 `config.outputs.f
 terraform -chdir=extensions/monitoring fmt -check
 terraform -chdir=extensions/monitoring init -input=false
 terraform -chdir=extensions/monitoring validate
-terraform -chdir=extensions/monitoring plan -input=false -var-file=../../terraform.tfvars -out=monitoring.tfplan
+terraform -chdir=extensions/monitoring plan -input=false "-var-file=../../terraform.tfvars" -out=monitoring.tfplan
 terraform -chdir=extensions/monitoring apply monitoring.tfplan
 ```
 
@@ -168,9 +168,9 @@ terraform -chdir=extensions/monitoring apply monitoring.tfplan
 producer와 채점 트래픽을 먼저 중지한 뒤 아래 역순으로 제거합니다.
 
 ```powershell
-terraform -chdir=extensions/monitoring destroy -input=false -var-file=../../terraform.tfvars
-terraform -chdir=application destroy -input=false -var-file=../terraform.tfvars
-terraform -chdir=foundation destroy -input=false -var-file=../terraform.tfvars
+terraform -chdir=extensions/monitoring destroy -input=false "-var-file=../../terraform.tfvars"
+terraform -chdir=application destroy -input=false "-var-file=../terraform.tfvars"
+terraform -chdir=foundation destroy -input=false "-var-file=../terraform.tfvars"
 ```
 
 application을 먼저 제거해야 nginx Service가 만든 NLB와 ENI가 VPC보다 먼저 삭제됩니다. foundation의 S3/ECR은 실습 정리를 위해 `force_destroy`이며, Secrets Manager secret은 즉시 삭제 설정입니다. 이 구현은 customer-managed KMS key를 만들지 않습니다.

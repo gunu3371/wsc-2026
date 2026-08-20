@@ -1,4 +1,4 @@
-# 00007 2과제 Terraform 구현
+# 2과제 00007 Terraform 구현
 
 ## 기준 자료와 구성
 
@@ -32,10 +32,10 @@
 ```powershell
 terraform -chdir=cdn init -input=false
 terraform -chdir=cdn validate
-terraform -chdir=cdn plan -input=false -var-file=../terraform.tfvars
-terraform -chdir=nosql plan -input=false -var-file=../terraform.tfvars
-terraform -chdir=o11y plan -input=false -var-file=../terraform.tfvars
-terraform -chdir=scaling plan -input=false -var-file=../terraform.tfvars
+terraform -chdir=cdn plan -input=false "-var-file=../terraform.tfvars"
+terraform -chdir=nosql plan -input=false "-var-file=../terraform.tfvars"
+terraform -chdir=o11y plan -input=false "-var-file=../terraform.tfvars"
+terraform -chdir=scaling plan -input=false "-var-file=../terraform.tfvars"
 ```
 
 모듈은 독립적으로 plan/apply/destroy한다. EKS API 접근이 필요한 `o11y`와 `scaling`은 먼저 기반 EKS와 인증 정보를 준비하고, Kubernetes·Helm 리소스를 AWS 기반 리소스보다 먼저 제거한다.

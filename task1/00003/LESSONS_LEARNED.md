@@ -22,13 +22,13 @@
 ```powershell
 # 1. Kubernetes 및 Helm 리소스 제거 (state가 있는 경우)
 terraform -chdir=task1/extensions/observability-fix destroy -auto-approve
-terraform -chdir=addons destroy -var-file=../terraform.tfvars
+terraform -chdir=addons destroy "-var-file=../terraform.tfvars"
 
 # 2. 데이터 보호 해제 및 버킷/ECR 강제 정리 기능 반영
-terraform -chdir=platform apply -var-file=../terraform.tfvars
+terraform -chdir=platform apply "-var-file=../terraform.tfvars"
 
 # 3. 기반 인프라 제거
-terraform -chdir=platform destroy -var-file=../terraform.tfvars
+terraform -chdir=platform destroy "-var-file=../terraform.tfvars"
 ```
 
 `addons`의 state가 없거나 destroy가 실패했을 때는 VPC ID, EKS cluster 태그, Ingress 태그로 ALB/NLB, target group, ENI, 보안 그룹, IAM 역할·정책을 **조회하여 소유권을 확인한 뒤에만** 정리한다. 다른 과제나 기본 VPC 리소스는 삭제하지 않는다.
