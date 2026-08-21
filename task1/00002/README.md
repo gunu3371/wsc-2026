@@ -96,6 +96,8 @@ terraform -chdir=application apply "-var-file=../terraform.tfvars"
 
 일반적인 이미지 푸시는 `extensions/image-build`와 CodeBuild를 사용한다. `extensions/grading-bastion`은 CodeBuild 장애를 분석해야 하는 예외 상황에만 사용한다. 이 독립 root는 private subnet의 SSM 전용 EC2, 최소 ECR/S3/KMS 권한, 임시 Docker build 객체만 생성한다. 진단이 끝나면 반드시 destroy한다. SSH와 public IP는 사용하지 않는다.
 
+베스천을 예외적으로 적용하면 EKS API 접근을 위해 `wskorea26-cloudshell-sg`를 베스천 ENI에도 임시 연결한다. 평상시에는 CloudShell VPC environment만 이 SG를 사용하며, 베스천 destroy 시 해당 연결도 제거된다.
+
 ```powershell
 terraform -chdir=extensions/grading-bastion init -input=false
 terraform -chdir=extensions/grading-bastion apply "-var-file=../../terraform.tfvars"
@@ -105,7 +107,22 @@ terraform -chdir=extensions/grading-bastion destroy "-var-file=../../terraform.t
 
 ## 채점
 
-채점 스크립트는 원본 위치에서 수정하지 않고 AWS CloudShell에서 실행한다. 계정과 리전을 먼저 확인하고, 1과제는 private subnet `wskorea26-priv-subnet-d`와 `wskorea26-vpc-environment-sg`를 사용하는 CloudShell VPC 환경에서 EKS 접근을 확인한다.
+채점 스크립트는 원본 위치에서 수정하지 않고 AWS CloudShell에서 실행한다. foundation은 다음 네트워크 구성을 미리 만든다.
+
+- EKS private endpoint에는 기존 `wskorea26-vpc-environment-sg`를 연결한다.
+- CloudShell에는 inbound 규칙이 없는 전용 `wskorea26-cloudshell-sg`만 연결한다.
+- EKS 연결용 SG는 CloudShell 전용 SG에서 들어오는 TCP 443만 허용한다.
+- CloudShell은 NAT Gateway 경로가 있는 `wskorea26-priv-subnet-d`를 사용한다.
+
+foundation 적용 후 아래 output으로 콘솔에서 선택할 실제 ID를 확인한다. AWS CloudShell 콘솔에서 새 VPC environment를 만들고 이 VPC, subnet, security group을 각각 선택한다. CloudShell environment 자체의 생성·삭제는 Terraform이 지원하는 리소스가 아니므로 콘솔에서 수행하며, 기존 기본 CloudShell environment를 삭제할 필요는 없다.
+
+```powershell
+terraform -chdir=foundation output -raw cloudshell_vpc_id
+terraform -chdir=foundation output -raw cloudshell_subnet_id
+terraform -chdir=foundation output -raw cloudshell_security_group_id
+```
+
+CloudShell VPC environment를 연 뒤 다음 순서로 EKS 네트워크와 인증을 확인한다.
 
 ```bash
 aws sts get-caller-identity --query Arn --output text
@@ -116,7 +133,7 @@ kubectl get nodes
 bash mark.sh
 ```
 
-`kubectl auth can-i`가 `yes`이고 노드가 조회된 뒤에만 채점한다. 등록한 추가 관리자 권한은 foundation state가 소유하므로 채점 중 수동으로 Access Entry를 만들거나 삭제하지 않는다.
+연결 timeout은 선택한 VPC·subnet·SG와 EKS 443 규칙을 확인한다. `the server has asked for the client to provide credentials`가 나오면 `additional_cluster_admin_principal_arns`에 CloudShell의 영구 IAM user/role ARN이 등록됐는지 확인한다. `kubectl auth can-i`가 `yes`이고 노드가 조회된 뒤에만 채점한다. 등록한 추가 관리자 권한은 foundation state가 소유하므로 채점 중 수동으로 Access Entry를 만들거나 삭제하지 않는다.
 
 ## Destroy 순서
 

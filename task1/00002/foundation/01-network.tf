@@ -77,13 +77,15 @@ resource "aws_route_table_association" "private" {
 resource "aws_security_group" "environment" {
   name   = "wskorea26-vpc-environment-sg"
   vpc_id = aws_vpc.main.id
+
   ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    self        = true
-    description = "EKS private endpoint access from the CloudShell VPC environment"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.cloudshell.id]
+    description     = "EKS private endpoint access from CloudShell"
   }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -91,4 +93,21 @@ resource "aws_security_group" "environment" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = local.input.tags
+}
+
+resource "aws_security_group" "cloudshell" {
+  name        = "wskorea26-cloudshell-sg"
+  description = "No ingress; outbound access for the CloudShell VPC environment"
+  vpc_id      = aws_vpc.main.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.input.tags, {
+    Name = "wskorea26-cloudshell-sg"
+  })
 }

@@ -19,10 +19,10 @@ data "aws_kms_alias" "s3" {
   name = "alias/wskorea26-s3-key"
 }
 
-data "aws_security_group" "eks_environment" {
+data "aws_security_group" "eks_client" {
   filter {
     name   = "group-name"
-    values = ["wskorea26-vpc-environment-sg"]
+    values = ["wskorea26-cloudshell-sg"]
   }
 }
 

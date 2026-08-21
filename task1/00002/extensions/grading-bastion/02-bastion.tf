@@ -86,7 +86,7 @@ resource "aws_instance" "bastion" {
   ami                         = data.aws_ssm_parameter.al2023.value
   instance_type               = local.input.instance_type
   subnet_id                   = data.aws_subnet.private_d.id
-  vpc_security_group_ids      = [aws_security_group.bastion.id, data.aws_security_group.eks_environment.id]
+  vpc_security_group_ids      = [aws_security_group.bastion.id, data.aws_security_group.eks_client.id]
   iam_instance_profile        = aws_iam_instance_profile.bastion.name
   associate_public_ip_address = false
 

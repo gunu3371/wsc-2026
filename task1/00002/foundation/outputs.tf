@@ -21,3 +21,18 @@ output "cluster_ca" {
 output "dynamodb_table_name" {
   value = aws_dynamodb_table.book.name
 }
+
+output "cloudshell_vpc_id" {
+  description = "CloudShell VPC environment에서 선택할 VPC ID"
+  value       = aws_vpc.main.id
+}
+
+output "cloudshell_subnet_id" {
+  description = "CloudShell VPC environment에서 선택할 private subnet-d ID"
+  value       = aws_subnet.private[1].id
+}
+
+output "cloudshell_security_group_id" {
+  description = "CloudShell VPC environment에서 선택할 전용 security group ID"
+  value       = aws_security_group.cloudshell.id
+}
