@@ -1,120 +1,157 @@
 # 1과제 00002 Terraform 구현
 
-제61회 전국기능경기대회 클라우드컴퓨팅 과제번호 00002의 **1과제만** Terraform으로 구현한다. 2과제 구현은 별도 과제 루트인 `task2/00002`에서 관리하며, 이 디렉터리의 변수 파일·state·적용·채점·정리 절차와 공유하지 않는다. 각 root module 디렉터리 안의 모든 `.tf` 파일은 하나의 root module과 state로 함께 평가된다.
+과제번호 `00002`의 1과제만 다룬다. 2과제는 `task2/00002`에서 별도 변수 파일, state, 적용, 채점 및 정리 절차로 관리한다.
 
-## 기준 자료
+## 기준 자료 및 확인 상태
 
-- `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/00_최종본_안내.txt`
-- `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/01_최종제출본/제61회전국기능경기대회_vf/1과제/과제지&배포파일/1과제_문제.pdf`
-- `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/01_최종제출본/제61회전국기능경기대회_vf/1과제/채점기준표&채점스크립트/1과제_채점기준.pdf`
-- `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/01_최종제출본/제61회전국기능경기대회_vf/1과제/채점기준표&채점스크립트/채점스크립트/mark.sh`
-- `docs/2026-07-31 직종협의회.md`는 운영 참고사항으로만 사용한다.
+- 최종본 안내: `37_클라우드컴퓨팅/클라우드컴퓨팅-2026-00002/00_최종본_안내.txt`
+- 기존 문제지: 같은 경로의 `01_최종제출본/제61회전국기능경기대회_vf/1과제/과제지&배포파일/1과제_문제.pdf`
+- 기존 채점지·`mark.sh`: 같은 경로의 `01_최종제출본/제61회전국기능경기대회_vf/1과제/채점기준표&채점스크립트/`
+- 저장소 내 수정본: `2026년 전국기능경기대회 hwp 수정본/1과제 00002/`
+- 운영 참고: `docs/2026-07-31 직종협의회.md`
 
-요구사항 대조표는 `REQUIREMENTS.md`, 원본 간 충돌은 `ERROR_CANDIDATES.md`에 기록했다. 공식 PDF와 채점 스크립트는 수정하지 않았다.
+수정본은 2026-08-21에 기존 PDF와 대조했다. 로그인 전용 공식 게시 여부는 확인하지 못했으며 공식 PDF와 채점 스크립트는 수정하지 않았다.
 
-## 디렉터리와 state 경계
+## 빠른 실행
 
-```text
-task1/00002/
-├── foundation/                 # 1과제 AWS 기반 root/state
-│   └── 00-common.tf ~ 10-monitoring.tf
-├── application/                # EKS Kubernetes/Helm root/state
-├── extensions/
-│   ├── image-build/            # CodeBuild 기반 ECR 이미지 빌드 root/state
-│   └── grading-bastion/        # 예외적 진단용 SSM 베스천 root/state
-├── assets/
-│   └── shared/book-image/      # 공식 book 바이너리와 Dockerfile
-└── terraform.tfvars.example    # 1과제 전용 변수 예시
+### 사전 준비
+
+- Terraform 1.8 이상과 AWS CLI v2
+- Windows PowerShell 5.1 이상
+- EKS 작업용 `kubectl`, Helm, `jq`
+- `ap-northeast-2` 대상 AWS 자격 증명
+
+먼저 계정을 확인한다.
+
+```powershell
+aws sts get-caller-identity
+terraform fmt -check -recursive
 ```
 
-1과제는 `foundation → application` 순으로 적용한다. `application`은 foundation output만 입력으로 받으며 EKS 워크로드와 모니터링을 소유한다. root/state 경계와 Terraform 리소스 주소는 유지한다. 변수 예시는 과제 루트의 단일 `terraform.tfvars.example`에서 관리한다.
+실제 `terraform.tfvars`, state, plan, `.terraform/`, 생성 ZIP과 자격 증명은 Git에 커밋하지 않는다.
 
-## 주요 고정값
+### 변수 파일 준비
 
-| 범위 | 리전 | 네트워크 | 주요 이름 |
-|---|---|---|---|
-| 1과제 | ap-northeast-2 | 172.16.0.0/16, public 172.16.1/24·2/24, private 172.16.201/24·202/24 | `wskorea26-cluster`, `wskorea26-book-repo`, `wskorea26-data-table` |
+과제 루트 `task1/00002`에서 한 번만 실행한다.
 
-전역 고유 S3 버킷에는 `task_id` 또는 계정 기반 suffix를 붙인다. 공통 태그는 `Project`, `TaskId`, `ManagedBy=Terraform`이다.
+```powershell
+Copy-Item terraform.tfvars.example terraform.tfvars
+```
 
-## 사전 준비
+### 검증과 적용 순서
 
-- Terraform 1.8 이상
-- AWS CLI v2와 대상 계정 자격 증명
-- Windows PowerShell 5.1 이상과 AWS CLI v2
-- EKS 작업 및 채점용 `kubectl`, Helm, `jq`
-
-실행 전에 `aws sts get-caller-identity`로 계정을 확인한다. 실제 `terraform.tfvars`, state, plan, `.terraform/`, 생성 ZIP과 자격 증명은 커밋하지 않는다.
-
-## 단일 변수 파일
-
-과제 루트에서 `Copy-Item terraform.tfvars.example terraform.tfvars`를 한 번 실행한다. `config.common`에는 과제 공통값, `config.modules`에는 직접 입력, `config.outputs.foundation`에는 foundation 적용 후 얻은 EKS와 DynamoDB output을 기록한다. 실제 파일은 Git에 커밋하지 않는다.
-
-CloudShell의 IAM principal이 foundation 생성 principal과 다르면 foundation 적용 전에 `config.modules.foundation.additional_cluster_admin_principal_arns`에 CloudShell의 영구 IAM user/role ARN을 추가한다. Terraform은 각 ARN의 EKS Access Entry와 클러스터 범위 `AmazonEKSClusterAdminPolicy` 연결을 함께 관리한다. 계정 root ARN과 `arn:aws:sts::...` 형식의 임시 세션 ARN은 사용하지 않는다. foundation 생성 principal과 CloudShell principal이 같으면 빈 목록을 유지한다.
-
-## 검증과 적용 순서
-
-과제 루트에서 root module별로 다음을 실행한다.
+1. `foundation`
+2. `image-build` extension과 CodeBuild 이미지 push
+3. foundation output을 `terraform.tfvars`에 기록
+4. `application`
 
 ```powershell
 terraform -chdir=foundation init -input=false
 terraform -chdir=foundation validate
 terraform -chdir=foundation plan -input=false "-var-file=../terraform.tfvars"
-# foundation 적용 후 terraform.tfvars의 config.outputs.foundation을 갱신한다.
-terraform -chdir=extensions/image-build plan -input=false "-var-file=../../terraform.tfvars"
-terraform -chdir=application plan -input=false "-var-file=../terraform.tfvars"
-terraform -chdir=extensions/grading-bastion plan -input=false "-var-file=../../terraform.tfvars"
-```
-
-적용은 검증 성공 후 사용자가 명시적으로 허용한 경우에만 같은 `-var-file` 인수로 실행한다.
-
-`application`은 foundation state를 직접 읽지 않는다. foundation을 먼저 apply한 뒤 `terraform -chdir=foundation output` 결과를 이 과제 루트의 `terraform.tfvars` 내 `config.outputs.foundation`에 복사해야 application을 plan할 수 있다.
-
-1과제 적용 순서는 다음과 같다.
-
-```powershell
-Copy-Item terraform.tfvars.example terraform.tfvars
-terraform -chdir=foundation init -input=false
 terraform -chdir=foundation apply "-var-file=../terraform.tfvars"
+terraform -chdir=foundation output
 ```
 
-ECR 생성 후에는 Docker나 WSL을 사용하지 않는다. image-build extension이 S3에 공식 `book` 바이너리와 Dockerfile을 준비하고, CodeBuild가 Linux/amd64 이미지를 ECR의 `stable` 태그로 푸시한다. application은 ECR 저장소를 직접 조회하므로 이미지 URI를 `terraform.tfvars`에 복사할 필요가 없다.
+ECR 생성 후 이미지를 빌드하고 `stable` 태그로 push한다.
 
 ```powershell
 terraform -chdir=extensions/image-build init -input=false
+terraform -chdir=extensions/image-build validate
+terraform -chdir=extensions/image-build plan -input=false "-var-file=../../terraform.tfvars"
 terraform -chdir=extensions/image-build apply "-var-file=../../terraform.tfvars"
 powershell -ExecutionPolicy Bypass -File .\Start-BookImageBuild.ps1
-# aws_profile을 tfvars에 지정했다면 같은 profile을 -Profile에 전달한다.
-# powershell -ExecutionPolicy Bypass -File .\Start-BookImageBuild.ps1 -Profile my-profile
-# CodeBuild가 SUCCEEDED를 출력한 뒤 실행한다.
+```
+
+`config.outputs.foundation`을 갱신하고 CodeBuild가 `SUCCEEDED`인지 확인한 뒤 application을 적용한다.
+
+```powershell
+terraform -chdir=application init -input=false
+terraform -chdir=application validate
+terraform -chdir=application plan -input=false "-var-file=../terraform.tfvars"
 terraform -chdir=application apply "-var-file=../terraform.tfvars"
 ```
 
-`Start-BookImageBuild.ps1`은 AWS CLI로 CodeBuild를 시작하고 완료까지 기다린다. 실패하면 CloudWatch Logs의 `/aws/codebuild/wskorea26-image-build`를 확인한다. CodeBuild 실행에는 추가 비용이 발생하며, 푸시가 끝난 뒤에도 extension을 유지하면 같은 명령으로 이미지를 다시 빌드할 수 있다.
+실제 apply는 각 plan을 검토한 뒤 실행한다.
 
-## 예외적 진단용 베스천
+## 구조와 state 경계
 
-일반적인 이미지 푸시는 `extensions/image-build`와 CodeBuild를 사용한다. `extensions/grading-bastion`은 CodeBuild 장애를 분석해야 하는 예외 상황에만 사용한다. 이 독립 root는 private subnet의 SSM 전용 EC2, 최소 ECR/S3/KMS 권한, 임시 Docker build 객체만 생성한다. 진단이 끝나면 반드시 destroy한다. SSH와 public IP는 사용하지 않는다.
-
-베스천을 예외적으로 적용하면 EKS API 접근을 위해 `wskorea26-cloudshell-sg`를 베스천 ENI에도 임시 연결한다. 평상시에는 CloudShell VPC environment만 이 SG를 사용하며, 베스천 destroy 시 해당 연결도 제거된다.
-
-```powershell
-terraform -chdir=extensions/grading-bastion init -input=false
-terraform -chdir=extensions/grading-bastion apply "-var-file=../../terraform.tfvars"
-# SSM Run Command로 Docker build/push 후 ECR stable 태그를 확인한다.
-terraform -chdir=extensions/grading-bastion destroy "-var-file=../../terraform.tfvars"
+```text
+task1/00002/
+├── foundation/                  # AWS 기반 root/state
+├── application/                 # EKS Kubernetes·Helm root/state
+├── extensions/
+│   ├── image-build/             # CodeBuild 이미지 생성 root/state
+│   └── grading-bastion/         # 선택적 SSM 진단 root/state
+├── assets/
+│   └── shared/book-image/       # 공식 바이너리와 Dockerfile
+└── terraform.tfvars.example     # 1과제 공용 변수 예시
 ```
 
-## 채점
+각 디렉터리 안의 모든 `.tf` 파일은 하나의 root module로 평가된다. `foundation`, `application`, 각 extension은 state를 공유하지 않는다.
 
-채점 스크립트는 원본 위치에서 수정하지 않고 AWS CloudShell에서 실행한다. foundation은 다음 네트워크 구성을 미리 만든다.
+| 범위 | 리전·네트워크 | 주요 이름 |
+| --- | --- | --- |
+| 1과제 | ap-northeast-2, VPC `172.16.0.0/16` | `wskorea26-cluster`, `wskorea26-book-repo`, `wskorea26-data-table` |
 
-- EKS private endpoint에는 기존 `wskorea26-vpc-environment-sg`를 연결한다.
-- CloudShell에는 inbound 규칙이 없는 전용 `wskorea26-cloudshell-sg`만 연결한다.
-- EKS 연결용 SG는 CloudShell 전용 SG에서 들어오는 TCP 443만 허용한다.
+public subnet은 `172.16.1.0/24`, `172.16.2.0/24`, private subnet은 `172.16.201.0/24`, `172.16.202.0/24`다.
+
+## 변수와 output 전달
+
+- `config.common`: 과제 공통값
+- `config.modules`: foundation, application, extension 직접 입력
+- `config.outputs.foundation`: EKS와 DynamoDB 등 foundation output
+
+application은 foundation state를 직접 읽지 않는다. foundation 적용 후 다음 결과를 실제 `terraform.tfvars`의 `config.outputs.foundation`에 복사한다.
+
+```powershell
+terraform -chdir=foundation output
+```
+
+CloudShell IAM principal이 foundation 생성 principal과 다르면 적용 전에
+`additional_cluster_admin_principal_arns`에 영구 IAM user 또는 role ARN을 넣는다.
+계정 root ARN과 `arn:aws:sts::...` 임시 session ARN은 사용하지 않는다.
+
+## 이미지 빌드
+
+Docker나 WSL 대신 CodeBuild가 Linux/amd64 이미지를 만들어 `wskorea26-book-repo:stable`로 push한다. application은 ECR 저장소를 직접 조회하므로 이미지 URI를 변수 파일에 복사하지 않는다.
+
+AWS profile을 사용하는 경우 스크립트에도 같은 profile을 전달한다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Start-BookImageBuild.ps1 -Profile my-profile
+```
+
+실패하면 CloudWatch Logs의 `/aws/codebuild/wskorea26-image-build`를 확인한다. CodeBuild에는 비용이 발생하며 extension을 유지하면 같은 스크립트로 다시 빌드할 수 있다.
+
+## 수정본 반영사항
+
+| 항목 | 값 |
+| --- | --- |
+| DynamoDB GSI | `concert_name-created_at-index`, PK `concert_name`, SK `created_at` |
+| CloudFront origin | `wskorea26-s3-origin`, `wskorea26-alb-origin` |
+| S3 origin header | `wskorea26-s3-access: true` |
+| ALB origin header | `X-Origin-Verify: wskorea26-cf` |
+| Grafana | `book` 앱 기준 CPU, Memory, Running Pods, Restarts, Network Receive |
+
+## 채점 전 확인
+
+- CodeBuild가 `stable` 이미지를 ECR에 push했는지 확인한다.
+- `config.outputs.foundation`의 placeholder가 실제 값으로 바뀌었는지 확인한다.
+- EKS node, application Pod, Grafana와 CloudFront endpoint를 확인한다.
+- 원본 `mark.sh`는 수정하지 않는다.
+
+<details>
+<summary>CloudShell VPC environment와 EKS 인증 확인</summary>
+
+foundation은 다음 네트워크 구성을 미리 만든다.
+
+- EKS private endpoint는 기존 `wskorea26-vpc-environment-sg`를 사용한다.
+- CloudShell에는 inbound 규칙이 없는 `wskorea26-cloudshell-sg`를 연결한다.
+- EKS 연결용 SG는 CloudShell SG에서 들어오는 TCP 443만 허용한다.
 - CloudShell은 NAT Gateway 경로가 있는 `wskorea26-priv-subnet-d`를 사용한다.
 
-foundation 적용 후 아래 output으로 콘솔에서 선택할 실제 ID를 확인한다. AWS CloudShell 콘솔에서 새 VPC environment를 만들고 이 VPC, subnet, security group을 각각 선택한다. CloudShell environment 자체의 생성·삭제는 Terraform이 지원하는 리소스가 아니므로 콘솔에서 수행하며, 기존 기본 CloudShell environment를 삭제할 필요는 없다.
+콘솔에서 선택할 VPC, subnet, security group ID를 확인한다.
 
 ```powershell
 terraform -chdir=foundation output -raw cloudshell_vpc_id
@@ -122,7 +159,7 @@ terraform -chdir=foundation output -raw cloudshell_subnet_id
 terraform -chdir=foundation output -raw cloudshell_security_group_id
 ```
 
-CloudShell VPC environment를 연 뒤 다음 순서로 EKS 네트워크와 인증을 확인한다.
+CloudShell VPC environment 자체는 콘솔에서 생성한다. 기존 기본 environment를 삭제할 필요는 없다.
 
 ```bash
 aws sts get-caller-identity --query Arn --output text
@@ -133,25 +170,56 @@ kubectl get nodes
 bash mark.sh
 ```
 
-연결 timeout은 선택한 VPC·subnet·SG와 EKS 443 규칙을 확인한다. `the server has asked for the client to provide credentials`가 나오면 `additional_cluster_admin_principal_arns`에 CloudShell의 영구 IAM user/role ARN이 등록됐는지 확인한다. `kubectl auth can-i`가 `yes`이고 노드가 조회된 뒤에만 채점한다. 등록한 추가 관리자 권한은 foundation state가 소유하므로 채점 중 수동으로 Access Entry를 만들거나 삭제하지 않는다.
+timeout이면 VPC, subnet, SG와 EKS TCP 443 규칙을 확인한다. credential 오류면 `additional_cluster_admin_principal_arns`의 영구 IAM principal 등록 여부를 확인한다.
 
-## Destroy 순서
+</details>
 
-1과제는 외부 ALB를 만드는 Kubernetes/Helm 리소스를 먼저 제거한 뒤 기반을 제거한다.
+<details>
+<summary>선택적 grading-bastion 사용</summary>
+
+`grading-bastion`은 일반 이미지 push 용도가 아니다. CodeBuild 장애를 분석해야 할 때만 private subnet에 SSM 전용 EC2를 만든다. SSH와 public IP는 사용하지 않는다.
+
+```powershell
+terraform -chdir=extensions/grading-bastion init -input=false
+terraform -chdir=extensions/grading-bastion validate
+terraform -chdir=extensions/grading-bastion plan -input=false "-var-file=../../terraform.tfvars"
+terraform -chdir=extensions/grading-bastion apply "-var-file=../../terraform.tfvars"
+```
+
+SSM Run Command로 진단한 뒤 즉시 제거한다.
+
+```powershell
+terraform -chdir=extensions/grading-bastion destroy "-var-file=../../terraform.tfvars"
+```
+
+</details>
+
+## 역순 정리
+
+1. 적용했다면 `grading-bastion`
+2. `image-build`
+3. `application`
+4. DynamoDB 삭제 보호 해제
+5. `foundation`
 
 ```powershell
 terraform -chdir=extensions/image-build destroy "-var-file=../../terraform.tfvars"
 terraform -chdir=application destroy "-var-file=../terraform.tfvars"
-# config.modules.foundation.dynamodb_deletion_protection_enabled를 false로 반영한 뒤 실행한다.
+```
+
+`config.modules.foundation.dynamodb_deletion_protection_enabled = false`를 실제 변수 파일에 반영한 뒤 foundation을 제거한다.
+
+```powershell
 terraform -chdir=foundation destroy "-var-file=../terraform.tfvars"
 ```
 
-마지막으로 각 state의 관리 리소스 수가 0인지 확인하고, `ap-northeast-2`의 EC2/VPC/ENI/ELB/EKS/Lambda/DynamoDB/S3/CloudWatch/IAM/KMS를 이름과 태그로 교차 확인한다. KMS 키는 즉시 삭제되지 않으므로 삭제 예약일도 확인한다.
+각 state가 비었는지 확인하고 EC2, VPC, ENI, ELB, EKS, Lambda, DynamoDB, S3, CloudWatch, IAM 및 KMS를 실제 AWS API에서 교차 확인한다. KMS 키는 즉시 삭제되지 않으므로 삭제 예약일도 확인한다.
 
-## Terraform 입력 자산
+## 입력 자산 및 관련 문서
 
-Terraform 입력 자산은 과제 루트 `assets/`에서만 관리한다. `foundation`은 `assets/foundation/`의 웹 파일, Lambda 코드, Kubernetes manifest와 모니터링 대시보드를 사용한다. 공식 `book` 바이너리와 Dockerfile은 `assets/shared/book-image/`에 두며, `image-build`와 `grading-bastion`이 동일 파일을 재사용한다.
+- `assets/foundation/`: 웹, Lambda, Kubernetes와 monitoring 입력
+- `assets/shared/book-image/`: 공식 book 바이너리와 Dockerfile
+- [REQUIREMENTS.md](REQUIREMENTS.md): 요구사항 대조
+- [ERROR_CANDIDATES.md](ERROR_CANDIDATES.md): 원본 간 충돌
 
-- 공식 원본 `37_클라우드컴퓨팅/...`는 이동하거나 수정하지 않는다.
-- Lambda ZIP과 같이 Terraform 실행 중 생성되는 파일은 각 root module에 생성되며 `assets/`에 커밋하지 않는다.
-- 자산 이동 후에는 원본 Git blob hash 또는 SHA-256으로 바이트 동일성을 확인한다.
+공식 원본은 이동하거나 수정하지 않는다. Lambda ZIP 등 Terraform 실행 산출물은 `assets/`에 넣지 않는다. 자산을 이동할 때는 Git blob hash 또는 SHA-256으로 동일성을 확인한다.

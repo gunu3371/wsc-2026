@@ -11,13 +11,17 @@ resource "aws_cloudfront_distribution" "web" {
   default_root_object = "index.html"
   origin {
     domain_name              = aws_s3_bucket.web.bucket_regional_domain_name
-    origin_id                = "concert-s3"
+    origin_id                = "wskorea26-s3-origin"
     origin_path              = "/web/main"
     origin_access_control_id = aws_cloudfront_origin_access_control.web.id
+    custom_header {
+      name  = "wskorea26-s3-access"
+      value = "true"
+    }
   }
   origin {
     domain_name = aws_lb.book.dns_name
-    origin_id   = "book-alb"
+    origin_id   = "wskorea26-alb-origin"
     custom_origin_config {
       http_port              = 80
       https_port             = 443
@@ -30,7 +34,7 @@ resource "aws_cloudfront_distribution" "web" {
     }
   }
   default_cache_behavior {
-    target_origin_id       = "concert-s3"
+    target_origin_id       = "wskorea26-s3-origin"
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
@@ -43,7 +47,7 @@ resource "aws_cloudfront_distribution" "web" {
   }
   ordered_cache_behavior {
     path_pattern           = "/book*"
-    target_origin_id       = "book-alb"
+    target_origin_id       = "wskorea26-alb-origin"
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods         = ["GET", "HEAD"]

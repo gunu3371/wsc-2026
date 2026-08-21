@@ -5,8 +5,7 @@ resource "kubernetes_manifest" "trigger_auth" {
     metadata   = { name = "sqs-worker-trigger-auth", namespace = kubernetes_namespace_v1.worker.metadata[0].name }
     spec = {
       podIdentity = {
-        provider      = "aws"
-        identityOwner = "keda"
+        provider = "aws-eks"
       }
     }
   }

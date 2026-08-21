@@ -16,6 +16,20 @@ resource "aws_dynamodb_table" "book" {
     name = "client_id"
     type = "S"
   }
+  attribute {
+    name = "concert_name"
+    type = "S"
+  }
+  attribute {
+    name = "created_at"
+    type = "S"
+  }
+  global_secondary_index {
+    name            = "concert_name-created_at-index"
+    hash_key        = "concert_name"
+    range_key       = "created_at"
+    projection_type = "ALL"
+  }
   server_side_encryption {
     enabled     = true
     kms_key_arn = aws_kms_key.ddb.arn
