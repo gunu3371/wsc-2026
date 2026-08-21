@@ -52,7 +52,7 @@ resource "helm_release" "monitoring" {
       }]
     }
     grafana = {
-      adminUser     = "skills-${local.input.task_id}-admin"
+      adminUser     = "skills-${local.input.candidate_id}-admin"
       adminPassword = local.input.grafana_admin_password
       nodeSelector = {
         "node-type" = "addon"

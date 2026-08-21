@@ -38,11 +38,13 @@ terraform fmt -check -recursive
 Copy-Item terraform.tfvars.example terraform.tfvars
 ```
 
+복사한 실제 파일의 `config.common.candidate_id`를 대회 당일 부여받은 선수 비번호로 바꾼다. `task_id = "00002"`는 출제 과제번호이므로 변경하지 않는다.
+
 ### 검증과 적용 순서
 
 1. `foundation`
-2. `image-build` extension과 CodeBuild 이미지 push
-3. foundation output을 `terraform.tfvars`에 기록
+2. foundation output을 `terraform.tfvars`에 기록
+3. `image-build` extension과 CodeBuild 이미지 push
 4. `application`
 
 ```powershell
@@ -53,7 +55,7 @@ terraform -chdir=foundation apply "-var-file=../terraform.tfvars"
 terraform -chdir=foundation output
 ```
 
-ECR 생성 후 이미지를 빌드하고 `stable` 태그로 push한다.
+출력 중 `s3_bucket_name`을 포함한 값을 `config.outputs.foundation`에 복사한다. 그다음 이미지를 빌드하고 `stable` 태그로 push한다.
 
 ```powershell
 terraform -chdir=extensions/image-build init -input=false
@@ -98,11 +100,11 @@ public subnet은 `172.16.1.0/24`, `172.16.2.0/24`, private subnet은 `172.16.201
 
 ## 변수와 output 전달
 
-- `config.common`: 과제 공통값
+- `config.common`: 고정 과제번호 `task_id`, 선수 비번호 `candidate_id`, AWS profile과 공통 태그
 - `config.modules`: foundation, application, extension 직접 입력
-- `config.outputs.foundation`: EKS와 DynamoDB 등 foundation output
+- `config.outputs.foundation`: EKS, DynamoDB와 S3 등 foundation output
 
-application은 foundation state를 직접 읽지 않는다. foundation 적용 후 다음 결과를 실제 `terraform.tfvars`의 `config.outputs.foundation`에 복사한다.
+application과 extension은 foundation state를 직접 읽지 않는다. foundation 적용 후 다음 결과를 실제 `terraform.tfvars`의 `config.outputs.foundation`에 복사한다. `s3_bucket_name`은 image-build와 grading-bastion이 선수 비번호 포함 버킷을 정확히 조회할 때 사용한다.
 
 ```powershell
 terraform -chdir=foundation output
@@ -131,12 +133,14 @@ powershell -ExecutionPolicy Bypass -File .\Start-BookImageBuild.ps1 -Profile my-
 | DynamoDB GSI | `concert_name-created_at-index`, PK `concert_name`, SK `created_at` |
 | CloudFront origin | `wskorea26-s3-origin`, `wskorea26-alb-origin` |
 | S3 origin header | `wskorea26-s3-access: true` |
-| ALB origin header | `X-Origin-Verify: wskorea26-cf` |
+| ALB origin header | GET·POST 규칙 각각 `X-Origin-Verify: wskorea26-cf`, header가 없으면 403 |
 | Grafana | `book` 앱 기준 CPU, Memory, Running Pods, Restarts, Network Receive |
 
 ## 채점 전 확인
 
 - CodeBuild가 `stable` 이미지를 ECR에 push했는지 확인한다.
+- S3 버킷이 `wskorea26-concert-bucket-<선수 비번호>`, Grafana 사용자가 `skills-<선수 비번호>-admin`인지 확인한다.
+- ALB listener에 GET·POST 두 규칙이 있고 두 규칙 모두 `X-Origin-Verify: wskorea26-cf` 조건을 갖는지 확인한다.
 - `config.outputs.foundation`의 placeholder가 실제 값으로 바뀌었는지 확인한다.
 - EKS node, application Pod, Grafana와 CloudFront endpoint를 확인한다.
 - 원본 `mark.sh`는 수정하지 않는다.

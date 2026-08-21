@@ -25,9 +25,15 @@ resource "aws_dynamodb_table" "book" {
     type = "S"
   }
   global_secondary_index {
-    name            = "concert_name-created_at-index"
-    hash_key        = "concert_name"
-    range_key       = "created_at"
+    name = "concert_name-created_at-index"
+    key_schema {
+      attribute_name = "concert_name"
+      key_type       = "HASH"
+    }
+    key_schema {
+      attribute_name = "created_at"
+      key_type       = "RANGE"
+    }
     projection_type = "ALL"
   }
   server_side_encryption {

@@ -22,6 +22,11 @@ output "dynamodb_table_name" {
   value = aws_dynamodb_table.book.name
 }
 
+output "s3_bucket_name" {
+  description = "선수 비번호가 포함된 정적 웹 자산 S3 버킷 이름"
+  value       = aws_s3_bucket.web.bucket
+}
+
 output "cloudshell_vpc_id" {
   description = "CloudShell VPC environment에서 선택할 VPC ID"
   value       = aws_vpc.main.id

@@ -32,8 +32,9 @@ resource "kubernetes_deployment_v1" "book" {
           effect   = "NoSchedule"
         }
         container {
-          name  = "book"
-          image = "${data.aws_ecr_repository.book.repository_url}:stable"
+          name              = "book"
+          image             = "${data.aws_ecr_repository.book.repository_url}:stable"
+          image_pull_policy = "Always"
           port {
             container_port = 8080
           }

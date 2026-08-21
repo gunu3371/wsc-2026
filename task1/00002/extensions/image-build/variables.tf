@@ -14,7 +14,11 @@ variable "config" {
         })
       })
     })
-    outputs = object({})
+    outputs = object({
+      foundation = object({
+        s3_bucket_name = string
+      })
+    })
   })
 
   validation {

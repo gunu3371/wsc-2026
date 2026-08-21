@@ -63,6 +63,36 @@ resource "aws_lb_listener_rule" "book" {
     }
   }
   condition {
+    http_request_method {
+      values = ["POST"]
+    }
+  }
+  condition {
+    http_header {
+      http_header_name = "X-Origin-Verify"
+      values           = ["wskorea26-cf"]
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "book_query" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 20
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.lambda.arn
+  }
+  condition {
+    path_pattern {
+      values = ["/book", "/book*"]
+    }
+  }
+  condition {
+    http_request_method {
+      values = ["GET"]
+    }
+  }
+  condition {
     http_header {
       http_header_name = "X-Origin-Verify"
       values           = ["wskorea26-cf"]

@@ -2,9 +2,10 @@ variable "config" {
   description = "00002 과제의 공통 설정과 foundation 입력입니다."
   type = object({
     common = object({
-      task_id     = string
-      aws_profile = optional(string)
-      tags        = optional(map(string), {})
+      task_id      = string
+      candidate_id = string
+      aws_profile  = optional(string)
+      tags         = optional(map(string), {})
     })
     modules = object({
       foundation = object({
@@ -20,6 +21,11 @@ variable "config" {
   validation {
     condition     = length(var.config.modules.foundation.availability_zones) == 2
     error_message = "foundation에는 정확히 두 개의 가용 영역이 필요합니다."
+  }
+
+  validation {
+    condition     = length(trimspace(var.config.common.candidate_id)) > 0 && var.config.common.candidate_id != "replace-with-candidate-number"
+    error_message = "common.candidate_id에는 대회 당일 부여받은 실제 선수 비번호를 입력해야 합니다."
   }
 
   validation {

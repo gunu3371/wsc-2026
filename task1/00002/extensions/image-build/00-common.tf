@@ -1,5 +1,5 @@
 data "aws_s3_bucket" "artifacts" {
-  bucket = "wskorea26-concert-bucket-${local.input.task_id}"
+  bucket = local.input.s3_bucket_name
 }
 
 data "aws_ecr_repository" "book" {
