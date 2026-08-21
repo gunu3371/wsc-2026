@@ -44,7 +44,7 @@ config = {
 
     application = {
       # 예시 비밀번호를 실환경 비밀로 사용하지 말고 실제 tfvars를 별도로 보호합니다.
-      grafana_admin_password = "\$korea26!!"
+      grafana_admin_password = "$korea26!!"
     }
 
     extensions = {
