@@ -5,116 +5,21 @@ resource "aws_cloudfront_origin_access_control" "static" {
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
 }
-locals {
-  lambda_origin = trimsuffix(trimprefix(aws_lambda_function_url.book_get.function_url, "https://"), "/")
-}
-resource "aws_cloudfront_distribution" "main" {
-
-  enabled             = true
-  is_ipv6_enabled     = true
-  default_root_object = "static/index.html"
-  web_acl_id          = aws_wafv2_web_acl.main.arn
-  price_class         = "PriceClass_All"
-  origin {
-    domain_name              = aws_s3_bucket.static.bucket_regional_domain_name
-    origin_id                = "static"
-    origin_access_control_id = aws_cloudfront_origin_access_control.static.id
-  }
-  origin {
-    domain_name = local.input.alb_domain_name
-    origin_id   = "alb"
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "http-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
-  }
-  origin {
-    domain_name = local.lambda_origin
-    origin_id   = "lambda"
-    custom_origin_config {
-      http_port              = 80
-      https_port             = 443
-      origin_protocol_policy = "https-only"
-      origin_ssl_protocols   = ["TLSv1.2"]
-    }
-  }
-  default_cache_behavior {
-    target_origin_id       = "static"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6"
-  }
-  ordered_cache_behavior {
-    path_pattern             = "/booking"
-    target_origin_id         = "alb"
-    viewer_protocol_policy   = "redirect-to-https"
-    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods           = ["GET", "HEAD"]
-    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eafa07d3"
-  }
-  ordered_cache_behavior {
-    path_pattern             = "/v1/book"
-    target_origin_id         = "lambda"
-    viewer_protocol_policy   = "redirect-to-https"
-    allowed_methods          = ["GET", "HEAD", "OPTIONS"]
-    cached_methods           = ["GET", "HEAD"]
-    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
-  }
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-  tags = {
-    Name = "wsc2026-cdn"
-  }
-
-}
-data "aws_iam_policy_document" "static_bucket" {
-  statement {
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.static.arn}/*"]
-    principals {
-      type        = "Service"
-      identifiers = ["cloudfront.amazonaws.com"]
-    }
-    condition {
-      test     = "StringEquals"
-      variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.main.arn]
-    }
-  }
-}
-resource "aws_s3_bucket_policy" "static" {
-  bucket = aws_s3_bucket.static.id
-  policy = data.aws_iam_policy_document.static_bucket.json
-}
 
 resource "aws_wafv2_web_acl" "main" {
-
   provider = aws.global
   name     = "wsc2026-waf"
   scope    = "CLOUDFRONT"
-  default_action {
-    allow {
 
-    }
+  default_action {
+    allow {}
   }
+
   rule {
     name     = "AWSManagedCommon"
     priority = 1
     override_action {
-      none {
-
-      }
+      none {}
     }
     statement {
       managed_rule_group_statement {
@@ -128,13 +33,12 @@ resource "aws_wafv2_web_acl" "main" {
       sampled_requests_enabled   = true
     }
   }
+
   rule {
     name     = "AWSManagedSQLi"
     priority = 2
     override_action {
-      none {
-
-      }
+      none {}
     }
     statement {
       managed_rule_group_statement {
@@ -148,13 +52,12 @@ resource "aws_wafv2_web_acl" "main" {
       sampled_requests_enabled   = true
     }
   }
+
   rule {
     name     = "RateLimit"
     priority = 3
     action {
-      block {
-
-      }
+      block {}
     }
     statement {
       rate_based_statement {
@@ -169,10 +72,109 @@ resource "aws_wafv2_web_acl" "main" {
       sampled_requests_enabled   = true
     }
   }
+
   visibility_config {
     cloudwatch_metrics_enabled = true
     metric_name                = "wsc2026-waf"
     sampled_requests_enabled   = true
   }
+}
 
+resource "aws_cloudfront_distribution" "main" {
+  enabled             = true
+  is_ipv6_enabled     = true
+  default_root_object = "static/index.html"
+  web_acl_id          = aws_wafv2_web_acl.main.arn
+  price_class         = "PriceClass_All"
+
+  origin {
+    domain_name              = local.input.static_bucket_regional_domain_name
+    origin_id                = "static"
+    origin_access_control_id = aws_cloudfront_origin_access_control.static.id
+  }
+
+  origin {
+    domain_name = local.input.alb_hostname
+    origin_id   = "alb"
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  origin {
+    domain_name = local.lambda_origin
+    origin_id   = "lambda"
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  default_cache_behavior {
+    target_origin_id       = "static"
+    viewer_protocol_policy = "redirect-to-https"
+    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
+    cached_methods         = ["GET", "HEAD"]
+    cache_policy_id        = "658327ea-f89d-4fab-a63d-7e88639e58f6"
+  }
+
+  ordered_cache_behavior {
+    path_pattern             = "/booking"
+    target_origin_id         = "alb"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+    origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eafa07d3"
+  }
+
+  ordered_cache_behavior {
+    path_pattern             = "/v1/book"
+    target_origin_id         = "lambda"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS"]
+    cached_methods           = ["GET", "HEAD"]
+    cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+    origin_request_policy_id = "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+  }
+
+  tags = {
+    Name = "wsc2026-cdn"
+  }
+}
+
+data "aws_iam_policy_document" "static_bucket" {
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["arn:aws:s3:::${local.input.static_bucket_name}/*"]
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.main.arn]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "static" {
+  bucket = local.input.static_bucket_name
+  policy = data.aws_iam_policy_document.static_bucket.json
 }

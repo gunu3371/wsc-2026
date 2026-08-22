@@ -35,10 +35,15 @@ resource "helm_release" "prometheus" {
       }
     }
     grafana = {
+      adminUser = "admin"
       adminPassword = "Skills$#$@!", service = {
         type = "LoadBalancer"
         }, nodeSelector = {
         "wsc2026/node" = "addon"
+        }, serviceAccount = {
+        annotations = {
+          "eks.amazonaws.com/role-arn" = aws_iam_role.grafana_cloudwatch.arn
+        }
         }, additionalDataSources = [{
           name      = "cloudwatch"
           uid       = "cloudwatch"
@@ -106,6 +111,8 @@ resource "helm_release" "fluent_bit" {
 
     }
 })]
+
+depends_on = [helm_release.prometheus]
 
 }
 

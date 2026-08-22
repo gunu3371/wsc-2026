@@ -68,44 +68,11 @@ data "aws_partition" "current" {
 data "tls_certificate" "eks" {
   url = data.aws_eks_cluster.main.identity[0].oidc[0].issuer
 }
-data "aws_dynamodb_table" "book" {
-  name = local.input.table_name
-}
-data "aws_iam_policy_document" "pod_assume" {
-  statement {
-    actions = ["sts:AssumeRole", "sts:TagSession"]
-    principals {
-      type        = "Service"
-      identifiers = ["pods.eks.amazonaws.com"]
-    }
-  }
-}
-resource "aws_iam_role" "pod" {
-  name               = "wsc2026-book-pod-role"
-  assume_role_policy = data.aws_iam_policy_document.pod_assume.json
-}
-resource "aws_iam_policy" "pod" {
-  name = "wsc2026-book-pod-policy"
-  policy = jsonencode({
-    Version = "2012-10-17", Statement = [{
-      Effect = "Allow", Action = ["dynamodb:PutItem"], Resource = data.aws_dynamodb_table.book.arn
-      }, {
-      Effect = "Allow", Action = ["kms:Decrypt"], Resource = "arn:${data.aws_partition.current.partition}:kms:${local.input.region}:${data.aws_caller_identity.current.account_id}:key/*"
-      Condition = {
-        StringEquals = { "kms:ResourceAliases" = "alias/wsc2026-db-kms" }
-      }
-    }]
-  })
-}
-resource "aws_iam_role_policy_attachment" "pod" {
-  role       = aws_iam_role.pod.name
-  policy_arn = aws_iam_policy.pod.arn
-}
 resource "aws_eks_pod_identity_association" "book" {
   cluster_name    = local.input.cluster_name
   namespace       = kubernetes_namespace_v1.book.metadata[0].name
   service_account = kubernetes_service_account_v1.book.metadata[0].name
-  role_arn        = aws_iam_role.pod.arn
+  role_arn        = local.input.book_pod_role_arn
 }
 
 resource "aws_iam_openid_connect_provider" "eks" {

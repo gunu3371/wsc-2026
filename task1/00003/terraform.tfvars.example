@@ -1,15 +1,25 @@
-# 이 파일은 00003 과제 전체 root module의 공용 입력 예시입니다.
-# 과제 루트에서 terraform.tfvars로 복사하고 replace-* placeholder를 실제 값으로 바꿉니다.
-# 실제 terraform.tfvars에는 계정별 ARN과 endpoint가 들어가므로 Git에 커밋하지 않습니다.
+# 이 파일은 00003 과제 전체 root module이 함께 사용하는 입력 예시입니다.
+# 과제 루트에서 `Copy-Item terraform.tfvars.example terraform.tfvars`로 복사한 뒤
+# replace-* 값을 실제 환경 값으로 변경합니다. 실제 terraform.tfvars는 Git에 커밋하지 않습니다.
+# 각 명령의 -var-file 경로는 root module 디렉터리를 기준으로 해석됩니다.
 
 config = {
+  # 모든 root module이 공유하는 과제 식별자, 리전, AWS profile과 태그입니다.
   common = {
-    # 응시번호가 아니라 과제번호입니다.
+    # 응시번호가 아니라 과제번호입니다. 고정값을 유지합니다.
     task_id = "00003"
-    region  = "ap-northeast-2"
 
-    # null이면 현재 AWS SDK 기본 자격 증명 체인을 사용합니다.
-    aws_profile = null
+    # 실제 선수 비번호입니다. S3 버킷 이름과 운영 문서에 사용합니다.
+    candidate_id = "replace-with-candidate-number"
+
+    # S3 버킷 이름에 사용할 임의의 영문 소문자 네 자리입니다.
+    candidate_letters = "replace-with-four-lowercase-letters"
+
+    # 문제지의 고정 리전입니다.
+    region = "ap-northeast-2"
+
+    # 로컬 AWS CLI profile 이름입니다. CloudShell 등 기본 자격 증명 체인은 null로 바꿉니다.
+    aws_profile = "default"
 
     tags = {
       Project   = "wsc2026"
@@ -18,20 +28,15 @@ config = {
     }
   }
 
+  # 각 root module에 직접 입력하는 값입니다.
   modules = {
     platform = {
-      # null이면 Terraform이 버킷 이름용 suffix를 생성합니다.
-      bucket_random_suffix = null
-
-      # platform과 addons가 사용할 이미지입니다. 공식 요구가 digest이면 @sha256 형식을 사용합니다.
-      image_uri = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr@sha256:replace-me"
-
-      # 외부 ALB 도메인이 정해진 뒤 교체합니다.
-      alb_domain_name = "example.invalid"
-
-      # 정상 기본값은 private endpoint입니다. public을 열면 아래 CIDR을 실제 접속 IP /32로 제한합니다.
+      # 정상값은 private endpoint입니다. 로컬에서 임시로 접근할 때만 true로 바꿉니다.
       eks_endpoint_public_access = false
-      eks_public_access_cidrs    = []
+
+      # public endpoint를 열 때 실제 접속 환경의 공인 IP를 /32로 제한합니다.
+      # 아래 문서용 예시를 그대로 사용하지 않습니다: ["203.0.113.10/32"]
+      eks_public_access_cidrs = []
 
       # 정상 적용은 false입니다. 보호 리소스 정리 절차에서만 true로 변경합니다.
       cleanup_mode = false
@@ -41,19 +46,19 @@ config = {
     }
 
     # platform output만 사용하는 모듈도 구조 확장을 위해 빈 구역을 유지합니다.
-    addons = {}
+    addons   = {}
+    delivery = {}
 
     extensions = {
-      observability_fix = {
-        namespace               = "observability"
-        grafana_service_account = "wsc2026-prometheus-grafana"
-        grafana_deployment      = "wsc2026-prometheus-grafana"
+      image_build = {
+        # CodeBuild 제한 시간입니다. 기본값 10분을 유지해도 됩니다.
+        build_timeout_minutes = 10
       }
       grading_bastion = {}
     }
   }
 
-  # platform 적용 후 아래 명령 결과를 복사합니다.
+  # 선행 root module 적용 후 terraform output 결과를 복사하는 구역입니다.
   outputs = {
     platform = {
       # terraform -chdir=platform output -raw cluster_name
@@ -62,14 +67,39 @@ config = {
       # terraform -chdir=platform output -raw book_table_name
       book_table_name = "replace-with-platform-output"
 
-      # terraform -chdir=platform output -raw image_uri
-      image_uri = "replace-with-platform-output"
+      # terraform -chdir=platform output -raw book_pod_role_arn
+      book_pod_role_arn = "arn:aws:iam::123456789012:role/wsc2026-book-pod-role"
 
       # terraform -chdir=platform output -raw vpc_id
       vpc_id = "vpc-replace-me"
 
       # terraform -chdir=platform output -json private_subnet_ids
       private_subnet_ids = ["subnet-replace-a", "subnet-replace-b"]
+
+      # terraform -chdir=platform output -raw static_bucket_name
+      static_bucket_name = "replace-with-platform-output"
+
+      # terraform -chdir=platform output -raw static_bucket_regional_domain_name
+      static_bucket_regional_domain_name = "replace-with-platform-output"
+
+      # terraform -chdir=platform output -raw bucket_kms_arn
+      bucket_kms_arn = "arn:aws:kms:ap-northeast-2:123456789012:key/replace-me"
+
+      # terraform -chdir=platform output -raw ecr_repository_url
+      ecr_repository_url = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr"
+
+      # terraform -chdir=platform output -raw lambda_function_url
+      lambda_function_url = "https://replace-me.lambda-url.ap-northeast-2.on.aws/"
+    }
+
+    # Start-BookImageBuild.ps1 성공 후 출력된 digest URI를 기록합니다.
+    image_build = {
+      image_uri = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/wsc2026-book-ecr@sha256:replace-me"
+    }
+
+    # addons 적용 후 terraform -chdir=addons output -raw alb_hostname 결과를 기록합니다.
+    addons = {
+      alb_hostname = "replace-with-addons-output.elb.amazonaws.com"
     }
   }
 }

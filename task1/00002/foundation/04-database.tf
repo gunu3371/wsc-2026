@@ -40,5 +40,5 @@ resource "aws_dynamodb_table" "book" {
     enabled     = true
     kms_key_arn = aws_kms_key.ddb.arn
   }
-  deletion_protection_enabled = local.input.dynamodb_deletion_protection_enabled
+  deletion_protection_enabled = !local.input.cleanup_mode
 }

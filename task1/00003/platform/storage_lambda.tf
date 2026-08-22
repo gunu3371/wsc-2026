@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "static" {
-  bucket        = "wsc2026-static-${local.suffix}-${lower(local.input.task_id)}-bucket"
+  bucket        = "wsc2026-static-${local.input.candidate_letters}-${local.input.candidate_id}-bucket"
   force_destroy = local.input.cleanup_mode
 }
 resource "aws_s3_bucket_public_access_block" "static" {

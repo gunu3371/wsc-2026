@@ -20,7 +20,7 @@ resource "aws_iam_role_policy" "lambda_ddb" {
   policy = jsonencode({
     Version = "2012-10-17", Statement = [
       {
-        Effect = "Allow", Action = ["dynamodb:PutItem", "dynamodb:Scan"], Resource = aws_dynamodb_table.book.arn
+        Effect = "Allow", Action = ["dynamodb:Scan"], Resource = aws_dynamodb_table.book.arn
       },
       {
         Effect = "Allow", Action = ["kms:Decrypt", "kms:Encrypt", "kms:GenerateDataKey"], Resource = aws_kms_key.ddb.arn

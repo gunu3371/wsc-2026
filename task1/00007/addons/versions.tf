@@ -10,12 +10,30 @@ terraform {
 }
 
 provider "aws" {
-  region = "ap-northeast-2"
+  region  = local.input.region
+  profile = local.input.aws_profile
+
+  default_tags {
+    tags = merge(local.input.tags, {
+      Project   = "unicorn"
+      TaskId    = local.input.task_id
+      ManagedBy = "Terraform"
+    })
+  }
 }
 
 provider "aws" {
-  alias  = "use1"
-  region = "us-east-1"
+  alias   = "use1"
+  region  = "us-east-1"
+  profile = local.input.aws_profile
+
+  default_tags {
+    tags = merge(local.input.tags, {
+      Project   = "unicorn"
+      TaskId    = local.input.task_id
+      ManagedBy = "Terraform"
+    })
+  }
 }
 
 provider "kubernetes" {

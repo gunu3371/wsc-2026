@@ -8,9 +8,10 @@
 - 기존 문제지: 같은 경로의 `01_최종제출본/제61회전국기능경기대회_vf/1과제/과제지&배포파일/1과제_문제.pdf`
 - 기존 채점지·`mark.sh`: 같은 경로의 `01_최종제출본/제61회전국기능경기대회_vf/1과제/채점기준표&채점스크립트/`
 - 저장소 내 수정본: `2026년 전국기능경기대회 hwp 수정본/1과제 00002/`
+- 최종 release candidate: `1과제 촤종수정본/day1_02_release_candidate_tp.pdf`, `day1_02_release_candidate_marking.pdf`, `d1-02-mark.sh`
 - 운영 참고: `docs/2026-07-31 직종협의회.md`
 
-수정본은 2026-08-21에 기존 PDF와 대조했다. 로그인 전용 공식 게시 여부는 확인하지 못했으며 공식 PDF와 채점 스크립트는 수정하지 않았다.
+최종 release candidate는 2026-08-23에 기존 PDF·채점 스크립트와 대조했다. 해당 폴더의 공식 게시 경로는 확인하지 못했으며 PDF와 채점 스크립트는 수정하지 않았다. 채점지의 미완성 배점과 모니터링 충돌은 `ERROR_CANDIDATES.md`에 기록했다.
 
 ## 빠른 실행
 
@@ -38,7 +39,7 @@ terraform fmt -check -recursive
 Copy-Item terraform.tfvars.example terraform.tfvars
 ```
 
-복사한 실제 파일의 `config.common.candidate_id`를 대회 당일 부여받은 선수 비번호로 바꾼다. `task_id = "00002"`는 출제 과제번호이므로 변경하지 않는다.
+복사한 실제 파일의 `config.common.candidate_id`를 대회 당일 부여받은 선수 등번호로 바꾼다. `task_id = "00002"`는 출제 과제번호이므로 변경하지 않는다.
 
 ### 검증과 적용 순서
 
@@ -100,11 +101,11 @@ public subnet은 `172.16.1.0/24`, `172.16.2.0/24`, private subnet은 `172.16.201
 
 ## 변수와 output 전달
 
-- `config.common`: 고정 과제번호 `task_id`, 선수 비번호 `candidate_id`, AWS profile과 공통 태그
+- `config.common`: 고정 과제번호 `task_id`, 선수 등번호 `candidate_id`, 리전, AWS profile과 공통 태그
 - `config.modules`: foundation, application, extension 직접 입력
 - `config.outputs.foundation`: EKS, DynamoDB와 S3 등 foundation output
 
-application과 extension은 foundation state를 직접 읽지 않는다. foundation 적용 후 다음 결과를 실제 `terraform.tfvars`의 `config.outputs.foundation`에 복사한다. `s3_bucket_name`은 image-build와 grading-bastion이 선수 비번호 포함 버킷을 정확히 조회할 때 사용한다.
+application과 extension은 foundation state를 직접 읽지 않는다. foundation 적용 후 다음 결과를 실제 `terraform.tfvars`의 `config.outputs.foundation`에 복사한다. `s3_bucket_name`은 image-build와 grading-bastion이 선수 등번호 포함 버킷을 정확히 조회할 때 사용한다.
 
 ```powershell
 terraform -chdir=foundation output
@@ -113,6 +114,24 @@ terraform -chdir=foundation output
 CloudShell IAM principal이 foundation 생성 principal과 다르면 적용 전에
 `additional_cluster_admin_principal_arns`에 영구 IAM user 또는 role ARN을 넣는다.
 계정 root ARN과 `arn:aws:sts::...` 임시 session ARN은 사용하지 않는다.
+
+### EKS API endpoint
+
+`config.modules.foundation`에서 EKS endpoint 접근을 제어한다. private endpoint는 항상 활성화되며 정상 구성과 채점 전에는 다음 값을 유지한다.
+
+```hcl
+eks_endpoint_public_access = false
+eks_public_access_cidrs    = []
+```
+
+로컬 PC에서 임시로 접근해야 할 때만 public endpoint를 활성화한다. CIDR은 현재 접속 환경의 실제 공인 IP `/32`로 제한하고 `0.0.0.0/0`은 사용하지 않는다. 아래 주소는 형식 설명용이므로 그대로 사용하지 않는다.
+
+```hcl
+eks_endpoint_public_access = true
+eks_public_access_cidrs    = ["203.0.113.10/32"]
+```
+
+작업이 끝나면 `false`와 빈 목록으로 되돌려 foundation을 다시 적용한다. 채점 전에도 public endpoint가 비활성화됐는지 확인한다.
 
 ## 이미지 빌드
 
@@ -126,6 +145,12 @@ powershell -ExecutionPolicy Bypass -File .\Start-BookImageBuild.ps1 -Profile my-
 
 실패하면 CloudWatch Logs의 `/aws/codebuild/wskorea26-image-build`를 확인한다. CodeBuild에는 비용이 발생하며 extension을 유지하면 같은 스크립트로 다시 빌드할 수 있다.
 
+스크립트는 push 이후 `stable` 이미지의 digest를 조회한다. 기존 이미지에 스캔 이력이 없으면 기본 스캔을 명시적으로 시작하고 `COMPLETE`가 될 때까지 기다린 뒤 취약점 개수를 출력한다. 채점 직전에도 완료 상태를 확인한다.
+
+```powershell
+aws ecr describe-image-scan-findings --region ap-northeast-2 --repository-name wskorea26-book-repo --image-id imageTag=stable
+```
+
 ## 수정본 반영사항
 
 | 항목 | 값 |
@@ -133,14 +158,18 @@ powershell -ExecutionPolicy Bypass -File .\Start-BookImageBuild.ps1 -Profile my-
 | DynamoDB GSI | `concert_name-created_at-index`, PK `concert_name`, SK `created_at` |
 | CloudFront origin | `wskorea26-s3-origin`, `wskorea26-alb-origin` |
 | S3 origin header | `wskorea26-s3-access: true` |
+| ALB POST | 외부 `/book`을 `/v1/book`으로 rewrite하고 EKS app nodegroup의 NodePort로 전달 |
+| ALB GET | `/book`을 `wskorea26-book-lambda`로 전달 |
 | ALB origin header | GET·POST 규칙 각각 `X-Origin-Verify: wskorea26-cf`, header가 없으면 403 |
-| Grafana | `book` 앱 기준 CPU, Memory, Running Pods, Restarts, Network Receive |
+| ECR | `stable` push 후 기본 이미지 스캔 완료 상태 확인 |
+| Grafana | `book` 컨테이너 CPU를 표시하는 `Book CPU Usage` 패널 |
 
 ## 채점 전 확인
 
-- CodeBuild가 `stable` 이미지를 ECR에 push했는지 확인한다.
-- S3 버킷이 `wskorea26-concert-bucket-<선수 비번호>`, Grafana 사용자가 `skills-<선수 비번호>-admin`인지 확인한다.
+- CodeBuild가 `stable` 이미지를 ECR에 push했고 이미지 스캔 상태가 `COMPLETE`인지 확인한다.
+- S3 버킷이 `wskorea26-concert-bucket-<선수 등번호>`, Grafana 사용자가 `skills-<선수 등번호>-admin`인지 확인한다. 최종 채점 스크립트의 `<비번호>` 표기는 같은 값을 뜻한다.
 - ALB listener에 GET·POST 두 규칙이 있고 두 규칙 모두 `X-Origin-Verify: wskorea26-cf` 조건을 갖는지 확인한다.
+- POST `/book`은 EKS book target group으로, GET `/book`은 Lambda target group으로 전달되는지 확인한다.
 - `config.outputs.foundation`의 placeholder가 실제 값으로 바뀌었는지 확인한다.
 - EKS node, application Pod, Grafana와 CloudFront endpoint를 확인한다.
 - 원본 `mark.sh`는 수정하지 않는다.
@@ -211,7 +240,7 @@ terraform -chdir=extensions/image-build destroy "-var-file=../../terraform.tfvar
 terraform -chdir=application destroy "-var-file=../terraform.tfvars"
 ```
 
-`config.modules.foundation.dynamodb_deletion_protection_enabled = false`를 실제 변수 파일에 반영한 뒤 foundation을 제거한다.
+`config.modules.foundation.cleanup_mode = true`를 실제 변수 파일에 반영한 뒤 foundation을 제거한다. 기존 실제 변수 파일의 `dynamodb_deletion_protection_enabled`도 호환되지만 새 구성에서는 `cleanup_mode`를 사용한다.
 
 ```powershell
 terraform -chdir=foundation destroy "-var-file=../terraform.tfvars"

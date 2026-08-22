@@ -1,0 +1,52 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "EKS Node CPU Usage (%)",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))"}],
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "EKS Node Memory Usage (%)",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)"}],
+      "fieldConfig": {"defaults": {"unit": "percent"}},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "type": "stat",
+      "title": "unicorn Namespace Pod Status",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum by (phase) (kube_pod_status_phase{namespace=\"unicorn\"})", "legendFormat": "{{phase}}"}],
+      "options": {"graphMode": "area", "colorMode": "value"},
+      "gridPos": {"h": 8, "w": 8, "x": 0, "y": 8}
+    },
+    {
+      "type": "stat",
+      "title": "Book App Ready Pods",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "sum(kube_pod_status_ready{namespace=\"unicorn\",pod=~\"unicorn-book-app-deploy-.*\",condition=\"true\"})"}],
+      "options": {"graphMode": "none", "colorMode": "value"},
+      "gridPos": {"h": 8, "w": 8, "x": 8, "y": 8}
+    },
+    {
+      "type": "timeseries",
+      "title": "Book App HTTP Request Duration",
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "targets": [{"refId": "A", "expr": "rate(log_metric_histogram_book_http_request_duration_seconds_sum[5m]) / clamp_min(rate(log_metric_histogram_book_http_request_duration_seconds_count[5m]), 0.001)"}],
+      "fieldConfig": {"defaults": {"unit": "s"}},
+      "gridPos": {"h": 8, "w": 8, "x": 16, "y": 8}
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["unicorn"],
+  "time": {"from": "now-1h", "to": "now"},
+  "title": "unicorn-grafana-dashboard",
+  "uid": "unicorn-grafana-dashboard",
+  "version": 1
+}

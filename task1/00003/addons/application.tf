@@ -256,5 +256,5 @@ resource "kubernetes_ingress_v1" "book" {
 }
 
 output "alb_hostname" {
-  value = try(kubernetes_ingress_v1.book.status[0].load_balancer[0].ingress[0].hostname, null)
+  value = kubernetes_ingress_v1.book.status[0].load_balancer[0].ingress[0].hostname
 }

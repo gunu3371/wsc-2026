@@ -4,6 +4,7 @@ variable "config" {
     common = object({
       task_id      = string
       candidate_id = string
+      region       = optional(string, "ap-northeast-2")
       aws_profile  = optional(string)
       tags         = optional(map(string), {})
     })
@@ -25,6 +26,6 @@ variable "config" {
 
   validation {
     condition     = length(trimspace(var.config.common.candidate_id)) > 0 && var.config.common.candidate_id != "replace-with-candidate-number"
-    error_message = "common.candidate_id에는 대회 당일 부여받은 실제 선수 비번호를 입력해야 합니다."
+    error_message = "common.candidate_id에는 대회 당일 부여받은 실제 선수 등번호를 입력해야 합니다."
   }
 }

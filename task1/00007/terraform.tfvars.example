@@ -1,40 +1,73 @@
-# 이 파일은 00007 과제의 foundation, cluster, addons가 함께 사용합니다.
-# 과제 루트에서 terraform.tfvars로 복사하고 선행 단계 적용 후 outputs 구역을 갱신합니다.
-# 실제 파일에는 계정별 ARN과 인증서가 포함되므로 Git에 커밋하지 않습니다.
+# 이 파일은 00007 과제 전체 root module이 함께 사용하는 입력 예시입니다.
+# 과제 루트에서 `Copy-Item terraform.tfvars.example terraform.tfvars`로 복사한 뒤
+# replace-* 값을 실제 환경 값으로 변경합니다. 실제 terraform.tfvars는 Git에 커밋하지 않습니다.
+# 각 명령의 -var-file 경로는 root module 디렉터리를 기준으로 해석됩니다.
 
 config = {
+  # 모든 root module이 공유하는 과제 식별자, 리전, AWS profile과 태그입니다.
   common = {
-    # 응시번호가 아니라 과제번호입니다.
+    # 응시번호가 아니라 과제번호입니다. 고정값을 유지합니다.
     task_id = "00007"
+
+    # 실제 선수등번호입니다. 감사 역할 External ID와 Grafana 계정에 사용합니다.
+    candidate_id = "replace-with-candidate-number"
+
+    # 문제지의 고정 리전입니다.
+    region = "ap-northeast-2"
+
+    # 로컬 AWS CLI profile 이름입니다. CloudShell 등 기본 자격 증명 체인은 null로 바꿉니다.
+    aws_profile = "default"
+
+    tags = {
+      Project   = "unicorn"
+      TaskId    = "00007"
+      ManagedBy = "Terraform"
+    }
   }
 
+  # 각 root module에 직접 입력하는 값입니다.
   modules = {
-    # 현재 foundation에는 사용자 입력이 없지만 확장 가능한 계약을 위해 유지합니다.
-    foundation = {}
+    foundation = {
+      # 정상 배포는 false입니다. 보호 리소스를 정리할 때만 true로 바꿉니다.
+      cleanup_mode = false
+    }
 
     cluster = {
       kubernetes_version = "1.35"
+
+      # 정상값은 private endpoint입니다. 로컬에서 임시로 접근할 때만 true로 바꿉니다.
+      eks_endpoint_public_access = false
+
+      # public endpoint를 열 때 실제 접속 환경의 공인 IP를 /32로 제한합니다.
+      # 아래 문서용 예시를 그대로 사용하지 않습니다: ["203.0.113.10/32"]
+      eks_public_access_cidrs = []
     }
 
-    addons = {
-      # ECR push 후 실제 이미지 digest URI를 사용합니다.
-      app_image = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/unicorn-concert-app@sha256:replace-me"
+    # addons의 사용자 직접 입력은 현재 없습니다.
+    addons = {}
 
-      # 감사 역할의 실제 ARN입니다. 계정 ID와 역할 이름을 확인합니다.
-      audit_principal_arn = "arn:aws:iam::123456789012:role/audit-reader"
+    extensions = {
+      image_build = {
+        # CodeBuild 제한 시간입니다. 기본값 10분을 유지해도 됩니다.
+        build_timeout_minutes = 10
+      }
     }
   }
 
+  # 선행 root module 적용 후 terraform output 결과를 복사하는 구역입니다.
   outputs = {
     # foundation 적용 후 terraform -chdir=foundation output으로 확인합니다.
     foundation = {
       vpc_id                = "vpc-replace-me"
+      public_subnet_ids     = ["subnet-public-a", "subnet-public-b", "subnet-public-c"]
       private_subnet_ids    = ["subnet-replace-a", "subnet-replace-b", "subnet-replace-c"]
       table_arn             = "arn:aws:dynamodb:ap-northeast-2:123456789012:table/unicorn-concert-db"
       app_kms_arn           = "arn:aws:kms:ap-northeast-2:123456789012:key/replace-app"
+      data_kms_arn          = "arn:aws:kms:ap-northeast-2:123456789012:key/replace-data"
       platform_kms_arn      = "arn:aws:kms:ap-northeast-2:123456789012:key/replace-platform"
       platform_use1_kms_arn = "arn:aws:kms:us-east-1:123456789012:key/replace-platform"
       bucket_name           = "unicorn-web-123456789012"
+      ecr_repository_url    = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/unicorn-concert-app"
     }
 
     # cluster 적용 후 각 이름과 동일한 terraform output 결과를 복사합니다.
@@ -43,6 +76,12 @@ config = {
       cluster_endpoint          = "https://replace-me.eks.ap-northeast-2.amazonaws.com"
       cluster_ca                = "replace-with-cluster-output"
       cluster_security_group_id = "sg-replace-me"
+    }
+
+    # Start-BookImageBuild.ps1이 ECR 스캔 완료와 LOW 이상 0건을 확인한 뒤
+    # 출력한 digest URI를 기록합니다. tag URI가 아니라 @sha256 형식이어야 합니다.
+    image_build = {
+      image_uri = "123456789012.dkr.ecr.ap-northeast-2.amazonaws.com/unicorn-concert-app@sha256:replace-me"
     }
   }
 }

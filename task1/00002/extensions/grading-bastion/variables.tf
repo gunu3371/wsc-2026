@@ -2,9 +2,11 @@ variable "config" {
   description = "00002 과제의 공통 설정과 grading-bastion 입력입니다."
   type = object({
     common = object({
-      task_id     = string
-      aws_profile = optional(string)
-      tags        = optional(map(string), {})
+      task_id      = string
+      candidate_id = string
+      region       = optional(string, "ap-northeast-2")
+      aws_profile  = optional(string)
+      tags         = optional(map(string), {})
     })
     modules = object({
       extensions = object({

@@ -7,11 +7,29 @@ terraform {
   }
 }
 provider "aws" {
-  region = "ap-northeast-2"
+  region  = local.input.region
+  profile = local.input.aws_profile
+
+  default_tags {
+    tags = merge(local.input.tags, {
+      Project   = "unicorn"
+      TaskId    = local.input.task_id
+      ManagedBy = "Terraform"
+    })
+  }
 }
 provider "aws" {
-  alias  = "use1"
-  region = "us-east-1"
+  alias   = "use1"
+  region  = "us-east-1"
+  profile = local.input.aws_profile
+
+  default_tags {
+    tags = merge(local.input.tags, {
+      Project   = "unicorn"
+      TaskId    = local.input.task_id
+      ManagedBy = "Terraform"
+    })
+  }
 }
 data "aws_caller_identity" "current" {
 
@@ -230,7 +248,8 @@ resource "aws_kms_alias" "platform_use1" {
   target_key_id = aws_kms_replica_key.platform_use1.key_id
 }
 resource "aws_s3_bucket" "web" {
-  bucket = "unicorn-web-${data.aws_caller_identity.current.account_id}"
+  bucket        = "unicorn-web-${data.aws_caller_identity.current.account_id}"
+  force_destroy = local.input.cleanup_mode
 }
 resource "aws_s3_bucket_public_access_block" "web" {
   bucket                  = aws_s3_bucket.web.id
@@ -264,11 +283,20 @@ resource "aws_s3_object" "index" {
   kms_key_id             = aws_kms_key.data.arn
   etag                   = filemd5("${path.module}/../assets/foundation/index.html")
 }
+resource "aws_s3_object" "main_image" {
+  bucket                 = aws_s3_bucket.web.id
+  key                    = "main.jpeg"
+  source                 = "${path.module}/../assets/foundation/main.jpeg"
+  content_type           = "image/jpeg"
+  server_side_encryption = "aws:kms"
+  kms_key_id             = aws_kms_key.data.arn
+  etag                   = filemd5("${path.module}/../assets/foundation/main.jpeg")
+}
 resource "aws_dynamodb_table" "concert" {
   name                        = "unicorn-concert-db"
   billing_mode                = "PAY_PER_REQUEST"
   hash_key                    = "booking_id"
-  deletion_protection_enabled = true
+  deletion_protection_enabled = !local.input.cleanup_mode
   attribute {
     name = "booking_id"
     type = "S"
@@ -297,7 +325,12 @@ resource "aws_dynamodb_table" "concert" {
 }
 resource "aws_ecr_repository" "app" {
   name                 = "unicorn-concert-app"
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE_WITH_EXCLUSION"
+  force_delete         = local.input.cleanup_mode
+  image_tag_mutability_exclusion_filter {
+    filter      = "latest"
+    filter_type = "WILDCARD"
+  }
   image_scanning_configuration {
     scan_on_push = true
   }

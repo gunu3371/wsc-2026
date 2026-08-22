@@ -66,8 +66,8 @@
 | 과제 루트 | root module/state 경계 |
 |---|---|
 | `task1/00002` | `foundation`, `application`, `extensions/image-build`, 선택적 `extensions/grading-bastion` |
-| `task1/00003` | `platform`, `addons`, `extensions/observability-fix`, 선택적 `extensions/grading-bastion` |
-| `task1/00007` | `foundation`, `cluster`, `addons` |
+| `task1/00003` | `platform`, `extensions/image-build`, `addons`, `delivery`, 선택적 `extensions/grading-bastion` |
+| `task1/00007` | `foundation`, `extensions/image-build`, `cluster`, `addons` |
 | `task2/00002` | 독립 서비스 `workflow`, `analytics`, `cloud-event`, `msk` |
 | `task2/00007` | 독립 서비스 `cdn`, `nosql`, `o11y`, `scaling` |
 | `task3` | `foundation`, `application`, `extensions/monitoring` |
@@ -107,6 +107,7 @@
 - 후속 module은 선행 module의 로컬 state 파일을 직접 읽지 않는다.
 - root module 사이에서 local backend 또는 상대 state 경로를 사용하는 `terraform_remote_state`를 만들지 않는다.
 - endpoint와 CA처럼 AWS API에서 조회 가능한 값은 적절한 AWS data source로 재조회할 수 있다.
+- 같은 task의 EKS root module은 `eks_endpoint_public_access`와 `eks_public_access_cidrs` 입력명을 공통으로 사용한다. private endpoint는 항상 활성화하고 public endpoint는 기본적으로 비활성화한다. 임시로 열 때는 실제 접속 IP의 `/32` CIDR만 허용하며 채점 전에 다시 비활성화한다.
 
 ## 4. 자산과 구현 규칙
 
@@ -165,7 +166,7 @@ PowerShell에서는 `-var-file=...` 전체를 큰따옴표로 감싼다. PowerSh
 
 ## 6. 로컬 Terraform 검증
 
-각 root module을 README의 의존 순서로 검증한다. `foundation → application → extensions`는 해당 구조를 쓰는 과제의 기본 순서일 뿐이다. `task1/00007`은 `foundation → cluster → addons` 순서이며, 서로 독립인 `task2` 서비스는 각각 별도 검증한다.
+각 root module을 README의 의존 순서로 검증한다. `foundation → application → extensions`는 해당 구조를 쓰는 과제의 기본 순서일 뿐이다. `task1/00003`은 `platform → extensions/image-build → addons → delivery`, `task1/00007`은 `foundation → extensions/image-build → cluster → addons` 순서이며, 서로 독립인 `task2` 서비스는 각각 별도 검증한다.
 
 ```powershell
 terraform -chdir=foundation fmt -check

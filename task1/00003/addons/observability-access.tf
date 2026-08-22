@@ -1,5 +1,55 @@
+data "aws_iam_policy_document" "grafana_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.eks.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${trimprefix(data.aws_eks_cluster.main.identity[0].oidc[0].issuer, "https://")}:sub"
+      values   = ["system:serviceaccount:observability:wsc2026-prometheus-grafana"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${trimprefix(data.aws_eks_cluster.main.identity[0].oidc[0].issuer, "https://")}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "grafana_cloudwatch" {
+  name               = "wsc2026-grafana-cloudwatch-role"
+  assume_role_policy = data.aws_iam_policy_document.grafana_assume.json
+}
+
+resource "aws_iam_role_policy" "grafana_cloudwatch" {
+  name = "wsc2026-grafana-cloudwatch-read"
+  role = aws_iam_role.grafana_cloudwatch.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:DescribeLogGroups",
+        "logs:GetLogEvents",
+        "logs:FilterLogEvents",
+        "logs:StartQuery",
+        "logs:StopQuery",
+        "logs:GetQueryResults",
+        "cloudwatch:GetMetricData",
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:ListMetrics",
+        "ec2:DescribeRegions",
+        "tag:GetResources",
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
 locals {
-  fluent_bit_config = <<-EOT
+  fluent_bit_metrics_config = <<-EOT
     [SERVICE]
         Daemon Off
         Flush 1
@@ -18,12 +68,6 @@ locals {
         Tag kube.*
         Mem_Buf_Limit 5MB
         Skip_Long_Lines On
-
-    [INPUT]
-        Name systemd
-        Tag host.*
-        Systemd_Filter _SYSTEMD_UNIT=kubelet.service
-        Read_From_Tail On
 
     [FILTER]
         Name kubernetes
@@ -91,14 +135,15 @@ locals {
 resource "kubernetes_config_map_v1_data" "fluent_bit_metrics" {
   metadata {
     name      = "wsc2026-fluent-bit"
-    namespace = local.input.namespace
+    namespace = kubernetes_namespace_v1.observability.metadata[0].name
   }
   data = {
-    "fluent-bit.conf" = local.fluent_bit_config
-    "duration.lua"    = file("${path.module}/../../assets/addons/duration.lua")
+    "fluent-bit.conf" = local.fluent_bit_metrics_config
+    "duration.lua"    = file("${path.module}/../assets/addons/duration.lua")
   }
-  field_manager = "terraform-observability-fix"
+  field_manager = "terraform-wsc2026-observability"
   force         = true
+  depends_on    = [helm_release.fluent_bit]
 }
 
 resource "kubernetes_annotations" "fluent_bit_rollout" {
@@ -106,12 +151,12 @@ resource "kubernetes_annotations" "fluent_bit_rollout" {
   kind        = "DaemonSet"
   metadata {
     name      = "wsc2026-fluent-bit"
-    namespace = local.input.namespace
+    namespace = kubernetes_namespace_v1.observability.metadata[0].name
   }
   template_annotations = {
-    "wsc2026/log-metrics-config" = sha256(join("", [local.fluent_bit_config, file("${path.module}/../../assets/addons/duration.lua")]))
+    "wsc2026/log-metrics-config" = sha256(join("", [local.fluent_bit_metrics_config, file("${path.module}/../assets/addons/duration.lua")]))
   }
-  field_manager = "terraform-observability-fix"
+  field_manager = "terraform-wsc2026-observability"
   force         = true
   depends_on    = [kubernetes_config_map_v1_data.fluent_bit_metrics]
 }
@@ -119,7 +164,7 @@ resource "kubernetes_annotations" "fluent_bit_rollout" {
 resource "kubernetes_service_v1" "fluent_bit_metrics" {
   metadata {
     name      = "wsc2026-fluent-bit-metrics"
-    namespace = local.input.namespace
+    namespace = kubernetes_namespace_v1.observability.metadata[0].name
     labels = {
       "wsc2026/metrics" = "fluent-bit"
     }
@@ -143,18 +188,12 @@ resource "kubernetes_manifest" "fluent_bit_service_monitor" {
     kind       = "ServiceMonitor"
     metadata = {
       name      = "wsc2026-fluent-bit-metrics"
-      namespace = local.input.namespace
+      namespace = kubernetes_namespace_v1.observability.metadata[0].name
       labels = {
         release = "wsc2026-prometheus"
       }
     }
     spec = {
-      attachMetadata = {
-        node = true
-      }
-      namespaceSelector = {
-        matchNames = [local.input.namespace]
-      }
       selector = {
         matchLabels = {
           "wsc2026/metrics" = "fluent-bit"
@@ -164,11 +203,6 @@ resource "kubernetes_manifest" "fluent_bit_service_monitor" {
         port     = "metrics"
         path     = "/metrics"
         interval = "15s"
-        relabelings = [{
-          action       = "keep"
-          regex        = "application"
-          sourceLabels = ["__meta_kubernetes_node_label_wsc2026_node"]
-        }]
       }]
     }
   }

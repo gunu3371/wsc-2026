@@ -1,20 +1,23 @@
 # 이 파일은 00002 과제 전체 root module이 함께 사용하는 입력 예시입니다.
-# 과제 루트에서 Copy-Item terraform.tfvars.example terraform.tfvars 로 복사한 뒤
-# replace-* 값을 실제 계정 값으로 변경합니다. 실제 terraform.tfvars는 Git에 커밋하지 않습니다.
+# 과제 루트에서 `Copy-Item terraform.tfvars.example terraform.tfvars`로 복사한 뒤
+# replace-* 값을 실제 환경 값으로 변경합니다. 실제 terraform.tfvars는 Git에 커밋하지 않습니다.
 # 각 명령의 -var-file 경로는 root module 디렉터리를 기준으로 해석됩니다.
 
 config = {
-  # 모든 root module이 공유하는 과제 식별자, AWS profile과 태그입니다.
+  # 모든 root module이 공유하는 과제 식별자, 리전, AWS profile과 태그입니다.
   common = {
     # 응시번호가 아니라 과제번호입니다. 고정값을 유지합니다.
     task_id = "00002"
 
-    # 선수 비번호입니다. 문제지의 S3 버킷명과 Grafana 관리자 계정에 사용됩니다.
+    # 선수 등번호입니다. 문제지의 S3 버킷명과 Grafana 관리자 계정에 사용됩니다.
     # 과제번호 00002를 그대로 쓰지 말고 대회 당일 부여받은 실제 비번호로 바꿉니다.
     candidate_id = "replace-with-candidate-number"
 
-    # null이면 현재 AWS SDK 기본 자격 증명 체인을 사용합니다.
-    aws_profile = null
+    # 문제지의 고정 리전입니다.
+    region = "ap-northeast-2"
+
+    # 로컬 AWS CLI profile 이름입니다. CloudShell 등 기본 자격 증명 체인은 null로 바꿉니다.
+    aws_profile = "default"
 
     tags = {
       Project   = "wskorea26-concert"
@@ -31,8 +34,16 @@ config = {
       cluster_version    = "1.35"
       lambda_runtime     = "python3.14"
 
-      # 정상 적용은 true입니다. destroy 전 보호 해제가 필요할 때만 false로 바꿉니다.
-      dynamodb_deletion_protection_enabled = true
+      # 정상 구성과 채점 전에는 false를 유지합니다. destroy 전에만 true로 바꾸면
+      # DynamoDB 삭제 보호가 해제됩니다.
+      cleanup_mode = false
+
+      # 정상값은 private endpoint입니다. 로컬에서 임시로 접근할 때만 true로 바꿉니다.
+      eks_endpoint_public_access = false
+
+      # public endpoint를 열 때 실제 접속 환경의 공인 IP를 /32로 제한합니다.
+      # 아래 문서용 예시를 그대로 사용하지 않습니다: ["203.0.113.10/32"]
+      eks_public_access_cidrs = []
 
       # CloudShell 채점 principal이 foundation 생성 principal과 다를 때만 추가합니다.
       # CloudShell에서 `aws sts get-caller-identity --query Arn --output text`로 확인하되,
@@ -76,7 +87,7 @@ config = {
       # terraform -chdir=foundation output -raw dynamodb_table_name
       dynamodb_table_name = "replace-with-foundation-output"
 
-      # foundation 적용 후 생성된 선수 비번호 포함 S3 버킷명을 복사합니다.
+      # foundation 적용 후 생성된 선수 등번호 포함 S3 버킷명을 복사합니다.
       # terraform -chdir=foundation output -raw s3_bucket_name
       s3_bucket_name = "replace-with-foundation-output"
     }

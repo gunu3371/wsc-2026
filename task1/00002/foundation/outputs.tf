@@ -23,7 +23,7 @@ output "dynamodb_table_name" {
 }
 
 output "s3_bucket_name" {
-  description = "선수 비번호가 포함된 정적 웹 자산 S3 버킷 이름"
+  description = "선수 등번호가 포함된 정적 웹 자산 S3 버킷 이름"
   value       = aws_s3_bucket.web.bucket
 }
 

@@ -7,7 +7,12 @@ data "aws_iam_policy_document" "kms" {
     resources = ["*"]
     principals {
       type        = "AWS"
-      identifiers = [data.aws_caller_identity.current.arn]
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:PrincipalAccount"
+      values   = [data.aws_caller_identity.current.account_id]
     }
 
   }
@@ -17,7 +22,12 @@ data "aws_iam_policy_document" "kms" {
     resources = ["*"]
     principals {
       type        = "AWS"
-      identifiers = [data.aws_caller_identity.current.arn]
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "aws:PrincipalAccount"
+      values   = [data.aws_caller_identity.current.account_id]
     }
   }
   statement {
@@ -74,8 +84,8 @@ data "aws_iam_policy_document" "kms_bucket" {
       test     = "ArnLike"
       variable = "kms:EncryptionContext:aws:s3:arn"
       values = [
-        "arn:${data.aws_partition.current.partition}:s3:::wsc2026-static-${local.suffix}-${lower(local.input.task_id)}-bucket",
-        "arn:${data.aws_partition.current.partition}:s3:::wsc2026-static-${local.suffix}-${lower(local.input.task_id)}-bucket/*"
+        "arn:${data.aws_partition.current.partition}:s3:::wsc2026-static-${local.input.candidate_letters}-${local.input.candidate_id}-bucket",
+        "arn:${data.aws_partition.current.partition}:s3:::wsc2026-static-${local.input.candidate_letters}-${local.input.candidate_id}-bucket/*"
       ]
     }
   }
@@ -89,7 +99,7 @@ data "aws_iam_policy_document" "kms_db" {
     resources = ["*"]
     principals {
       type        = "AWS"
-      identifiers = [aws_iam_role.book_function.arn, "arn:${data.aws_partition.current.partition}:iam::${data.aws_caller_identity.current.account_id}:role/wsc2026-book-pod-role"]
+      identifiers = [aws_iam_role.book_function.arn, aws_iam_role.book_pod.arn]
     }
     condition {
       test     = "StringEquals"

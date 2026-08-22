@@ -10,7 +10,7 @@ terraform {
   }
 }
 provider "aws" {
-  region  = "ap-northeast-2"
+  region  = local.input.region
   profile = local.input.aws_profile
   default_tags {
     tags = merge({

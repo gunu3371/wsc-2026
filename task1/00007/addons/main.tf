@@ -69,7 +69,7 @@ resource "kubernetes_deployment_v1" "app" {
         termination_grace_period_seconds = 45
         container {
           name  = "book"
-          image = local.input.app_image
+          image = local.input.image_uri
           port {
             container_port = 8080
           }
@@ -98,7 +98,7 @@ resource "kubernetes_deployment_v1" "app" {
           lifecycle {
             pre_stop {
               exec {
-                command = ["/bin/sh", "-c", "sleep 15"]
+                command = ["/bin/sleep", "15"]
               }
             }
           }
@@ -417,7 +417,7 @@ resource "aws_wafv2_web_acl" "main" {
   }
   custom_response_body {
     key          = "blocked"
-    content      = "Request blocked"
+    content      = "Request blocked by Unicorn WAF"
     content_type = "TEXT_PLAIN"
   }
   rule {
@@ -432,11 +432,49 @@ resource "aws_wafv2_web_acl" "main" {
       managed_rule_group_statement {
         name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
+        rule_action_override {
+          name = "CrossSiteScripting_QUERYARGUMENTS"
+          action_to_use {
+            count {}
+          }
+        }
       }
     }
     visibility_config {
       cloudwatch_metrics_enabled = true
       metric_name                = "unicorn-common"
+      sampled_requests_enabled   = true
+    }
+  }
+  rule {
+    name     = "unicorn-xss-query"
+    priority = 15
+    action {
+      block {
+        custom_response {
+          response_code            = 403
+          custom_response_body_key = "blocked"
+        }
+      }
+    }
+    statement {
+      xss_match_statement {
+        field_to_match {
+          all_query_arguments {}
+        }
+        text_transformation {
+          priority = 0
+          type     = "URL_DECODE"
+        }
+        text_transformation {
+          priority = 1
+          type     = "HTML_ENTITY_DECODE"
+        }
+      }
+    }
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "unicorn-xss-query"
       sampled_requests_enabled   = true
     }
   }
@@ -508,10 +546,10 @@ resource "aws_iam_role" "audit" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Principal = {
-        AWS = local.input.audit_principal_arn
+        AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
         }, Action = "sts:AssumeRole", Condition = {
         StringEquals = {
-          "sts:ExternalId" = "unicorn-audit-2026${local.input.task_id}"
+          "sts:ExternalId" = "unicorn-audit-2026${local.input.candidate_id}"
         }
       }
     }]
@@ -524,7 +562,9 @@ resource "aws_iam_role_policy" "audit" {
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:Query"], Resource = [local.input.table_arn, "${local.input.table_arn}/index/*"]
       }, {
-      Effect = "Allow", Action = ["ec2:DescribeVpcs", "ec2:DescribeSubnets", "ec2:DescribeRouteTables", "ec2:DescribeVpcEndpoints", "ec2:DescribeFlowLogs", "eks:DescribeCluster", "eks:ListNodegroups", "eks:DescribeNodegroup"], Resource = "*"
+      Effect = "Allow", Action = ["ec2:DescribeVpcs"], Resource = "*"
+      }, {
+      Effect = "Allow", Action = ["eks:DescribeCluster"], Resource = "arn:aws:eks:${local.input.region}:${data.aws_caller_identity.current.account_id}:cluster/${local.input.cluster_name}"
     }]
   })
 }
@@ -535,20 +575,31 @@ resource "helm_release" "monitoring" {
   create_namespace = true
   repository       = "https://prometheus-community.github.io/helm-charts"
   chart            = "kube-prometheus-stack"
+  version          = "79.8.2"
+  timeout          = 1200
   values = [yamlencode({
+    kubeControllerManager = { enabled = false }
+    kubeScheduler         = { enabled = false }
+    kubeEtcd              = { enabled = false }
+    kubeProxy             = { enabled = false }
     prometheusOperator = {
       nodeSelector = {
         unicorn = "addon"
       }
       }, grafana = {
+      adminUser     = "skills${local.input.candidate_id}"
+      adminPassword = "HelloKrSkills!${local.input.candidate_id}@"
       nodeSelector = {
         unicorn = "addon"
-        }, dashboards = {
+      }
+      service = {
+        type     = "NodePort"
+        nodePort = 30030
+      }
+      dashboards = {
         default = {
           unicorn-grafana-dashboard = {
-            json = jsonencode({
-              title = "unicorn-grafana-dashboard", uid = "unicorn-grafana-dashboard", schemaVersion = 39, panels = []
-            })
+            json = file("${path.module}/../assets/addons/dashboard.json")
           }
         }
       }
@@ -557,6 +608,16 @@ resource "helm_release" "monitoring" {
         nodeSelector = {
           unicorn = "addon"
         }
+      }
+      }, alertmanager = {
+      alertmanagerSpec = {
+        nodeSelector = {
+          unicorn = "addon"
+        }
+      }
+      }, kube-state-metrics = {
+      nodeSelector = {
+        unicorn = "addon"
       }
     }
   })]
@@ -597,29 +658,67 @@ resource "kubernetes_config_map_v1" "fluentbit" {
         Flush 1
         Log_Level info
         Parsers_File parsers.conf
+        HTTP_Server On
+        HTTP_Listen 0.0.0.0
+        HTTP_Port 2020
     [INPUT]
         Name tail
         Path /var/log/containers/unicorn-book-app-*_unicorn_book-*.log
-        Tag book.*
+        Tag book.raw
         Parser cri
         Mem_Buf_Limit 10MB
-    [FILTER]
-        Name grep
-        Match book.*
-        Exclude log /health
+        Skip_Long_Lines On
     [FILTER]
         Name parser
-        Match book.*
+        Match book.raw
         Key_Name log
         Parser json
         Reserve_Data Off
+    [FILTER]
+        Name grep
+        Match book.raw
+        Exclude path ^/health$
+    [FILTER]
+        Name rewrite_tag
+        Match book.raw
+        Rule $path ^/v1/book$ book.metrics true
+    [FILTER]
+        Name lua
+        Match book.metrics
+        script /fluent-bit/etc/transform.lua
+        call normalize_metrics
+    [FILTER]
+        Name log_to_metrics
+        Match book.metrics
+        Tag metrics.duration
+        Metric_Mode histogram
+        Metric_Name book_http_request_duration_seconds
+        Metric_Description Book App HTTP request duration
+        Value_Field duration_seconds
+        Bucket 0.1
+        Bucket 0.25
+        Bucket 0.5
+        Bucket 1
+        Bucket 2.5
+        Bucket 5
+        Bucket 10
+    [FILTER]
+        Name lua
+        Match book.raw
+        script /fluent-bit/etc/transform.lua
+        call normalize_cloudwatch
     [OUTPUT]
         Name cloudwatch_logs
-        Match book.*
-        region ap-northeast-2
+        Match book.raw
+        region ${local.input.region}
         log_group_name /unicorn/eks/book-app
         log_stream_prefix book-
         auto_create_group false
+    [OUTPUT]
+        Name prometheus_exporter
+        Match metrics.*
+        Host 0.0.0.0
+        Port 2021
     CONF
     "parsers.conf"    = <<-CONF
     [PARSER]
@@ -632,6 +731,7 @@ resource "kubernetes_config_map_v1" "fluentbit" {
         Name json
         Format json
     CONF
+    "transform.lua"   = file("${path.module}/../assets/addons/transform.lua")
 
   }
 
@@ -662,6 +762,10 @@ resource "kubernetes_daemon_set_v1" "fluentbit" {
         container {
           name  = "fluent-bit"
           image = "public.ecr.aws/aws-observability/aws-for-fluent-bit:2.34.0"
+          port {
+            name           = "metrics"
+            container_port = 2021
+          }
           volume_mount {
             name       = "config"
             mount_path = "/fluent-bit/etc"
@@ -671,6 +775,9 @@ resource "kubernetes_daemon_set_v1" "fluentbit" {
             mount_path = "/var/log"
             read_only  = true
           }
+        }
+        toleration {
+          operator = "Exists"
         }
         volume {
           name = "config"

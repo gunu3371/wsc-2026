@@ -20,12 +20,21 @@ output "book_table_name" {
 output "book_table_arn" {
   value = aws_dynamodb_table.book.arn
 }
-output "image_uri" {
-  value = local.input.image_uri
+output "book_pod_role_arn" {
+  value = aws_iam_role.book_pod.arn
+}
+output "ecr_repository_url" {
+  value = aws_ecr_repository.book.repository_url
 }
 output "static_bucket_name" {
   value = aws_s3_bucket.static.id
 }
-output "cloudfront_domain" {
-  value = aws_cloudfront_distribution.main.domain_name
+output "static_bucket_regional_domain_name" {
+  value = aws_s3_bucket.static.bucket_regional_domain_name
+}
+output "bucket_kms_arn" {
+  value = aws_kms_key.main["bucket"].arn
+}
+output "lambda_function_url" {
+  value = aws_lambda_function_url.book_get.function_url
 }

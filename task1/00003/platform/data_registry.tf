@@ -35,10 +35,10 @@ resource "aws_dynamodb_table" "book" {
 resource "aws_ecr_repository" "book" {
 
   name                 = "wsc2026-book-ecr"
-  image_tag_mutability = "IMMUTABLE_WITH_EXCLUSION"
+  image_tag_mutability = "MUTABLE_WITH_EXCLUSION"
   force_delete         = local.input.cleanup_mode
   image_tag_mutability_exclusion_filter {
-    filter      = "latest"
+    filter      = "v1*"
     filter_type = "WILDCARD"
   }
   image_scanning_configuration {
@@ -49,6 +49,29 @@ resource "aws_ecr_repository" "book" {
     kms_key         = aws_kms_key.main["ecr"].arn
   }
 
+}
+
+resource "aws_dynamodb_resource_policy" "book" {
+  resource_arn = aws_dynamodb_table.book.arn
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "BookPodPutItem"
+        Effect    = "Allow"
+        Principal = { AWS = aws_iam_role.book_pod.arn }
+        Action    = ["dynamodb:PutItem"]
+        Resource  = aws_dynamodb_table.book.arn
+      },
+      {
+        Sid       = "BookFunctionQuery"
+        Effect    = "Allow"
+        Principal = { AWS = aws_iam_role.book_function.arn }
+        Action    = ["dynamodb:Query"]
+        Resource  = "${aws_dynamodb_table.book.arn}/index/booking_id-index"
+      }
+    ]
+  })
 }
 
 resource "aws_ecr_lifecycle_policy" "book" {

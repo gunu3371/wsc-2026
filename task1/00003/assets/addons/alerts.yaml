@@ -14,4 +14,3 @@ spec:
         - { alert: PodNotReady, expr: 'kube_pod_status_ready{namespace="wsc2026",condition="true"} == 0', for: 3m }
         - { alert: PodCrashLooping, expr: 'kube_pod_container_status_waiting_reason{namespace="wsc2026",reason="CrashLoopBackOff"} == 1', for: 1m }
         - { alert: HighErrorRate, expr: 'sum(rate(log_metric_counter_http_requests_total{status=~"4..|5.."}[1m])) / clamp_min(sum(rate(log_metric_counter_http_requests_total[1m])), 0.001) > 0.05', for: 1m }
-        - { alert: HighLatency, expr: 'sum(rate(log_metric_histogram_http_request_duration_seconds_sum[1m])) / clamp_min(sum(rate(log_metric_histogram_http_request_duration_seconds_count[1m])), 0.001) > 3', for: 1m }

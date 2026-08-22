@@ -40,7 +40,8 @@ resource "aws_eks_cluster" "main" {
     subnet_ids              = aws_subnet.private[*].id
     security_group_ids      = [aws_security_group.environment.id]
     endpoint_private_access = true
-    endpoint_public_access  = false
+    endpoint_public_access  = local.input.eks_endpoint_public_access
+    public_access_cidrs     = local.input.eks_endpoint_public_access ? local.input.eks_public_access_cidrs : null
   }
   encryption_config {
     provider {

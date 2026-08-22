@@ -19,8 +19,9 @@ resource "aws_eks_cluster" "main" {
   role_arn = aws_iam_role.cluster.arn
   vpc_config {
     subnet_ids              = local.input.private_subnet_ids
-    endpoint_public_access  = false
     endpoint_private_access = true
+    endpoint_public_access  = local.input.eks_endpoint_public_access
+    public_access_cidrs     = local.input.eks_endpoint_public_access ? local.input.eks_public_access_cidrs : null
   }
   access_config {
     authentication_mode                         = "API"
@@ -53,6 +54,15 @@ resource "aws_iam_role_policy_attachment" "node" {
 }
 resource "aws_launch_template" "app" {
   name = "unicorn-app-node"
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      encrypted   = true
+      kms_key_id  = local.input.platform_kms_arn
+      volume_size = 20
+      volume_type = "gp3"
+    }
+  }
   tag_specifications {
     resource_type = "instance"
     tags = {
@@ -62,6 +72,15 @@ resource "aws_launch_template" "app" {
 }
 resource "aws_launch_template" "addon" {
   name = "unicorn-addon-node"
+  block_device_mappings {
+    device_name = "/dev/xvda"
+    ebs {
+      encrypted   = true
+      kms_key_id  = local.input.platform_kms_arn
+      volume_size = 20
+      volume_type = "gp3"
+    }
+  }
   tag_specifications {
     resource_type = "instance"
     tags = {
@@ -77,8 +96,8 @@ resource "aws_eks_node_group" "app" {
   instance_types  = ["t3.medium"]
   scaling_config {
     min_size     = 2
-    desired_size = 3
-    max_size     = 6
+    desired_size = 2
+    max_size     = 4
   }
   labels = {
     unicorn = "app", timezone = "Asia-Seoul"
