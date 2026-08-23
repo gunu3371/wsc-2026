@@ -68,11 +68,10 @@
 | `task1/00002` | `foundation`, `application`, `extensions/image-build`, 선택적 `extensions/grading-bastion` |
 | `task1/00003` | `platform`, `extensions/image-build`, `addons`, `delivery`, 선택적 `extensions/grading-bastion` |
 | `task1/00007` | `foundation`, `extensions/image-build`, `cluster`, `addons` |
-| `task2/00002` | 독립 서비스 `workflow`, `analytics`, `cloud-event`, `msk` |
-| `task2/00007` | 독립 서비스 `cdn`, `nosql`, `o11y`, `scaling` |
+| `task2` (과제번호 `00002`) | 독립 서비스 `workflow`, `analytics`, `msk` |
 | `task3` | `foundation`, `application`, `extensions/monitoring` |
 
-`task1`과 `task2`는 과제번호 하위 디렉터리를 사용한다. `task3`는 현재 단일 공통 과제이므로 `task3/` 자체가 과제 루트다. 새 공식 과제가 구조를 변경하면 기존 예시를 억지로 적용하지 않는다.
+`task1`은 과제번호 하위 디렉터리를 사용한다. `task2`는 과제번호 `00002`만 남아 `task2/` 자체가 과제 루트이며, 제외된 `00007` 구현은 유지하지 않는다. `task3`도 현재 단일 공통 과제이므로 `task3/` 자체가 과제 루트다. 새 공식 과제가 구조를 변경하면 기존 예시를 억지로 적용하지 않는다.
 
 ### 3.2 root module과 state 분리
 

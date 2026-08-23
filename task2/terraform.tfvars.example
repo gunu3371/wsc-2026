@@ -1,11 +1,14 @@
-# 이 파일은 00002 과제의 네 독립 서비스 root module이 함께 사용합니다.
-# 과제 루트에서 terraform.tfvars로 복사합니다. 실제 파일은 Git에 커밋하지 않습니다.
-# 각 서비스는 서로 다른 리전을 사용하므로 가용 영역을 임의로 다른 과제에서 가져오지 않습니다.
+# 이 파일은 과제번호 00002의 세 독립 root module이 함께 사용합니다.
+# 과제 루트에서 terraform.tfvars로 복사하고 실제 비번호만 수정합니다.
+# 실제 terraform.tfvars는 Git에 커밋하지 않습니다.
 
 config = {
   common = {
-    # 응시번호가 아니라 과제번호입니다.
+    # 과제번호입니다. 리소스 태그와 과제 식별에만 사용합니다.
     task_id = "00002"
+
+    # 대회에서 부여된 비번호입니다. 두 S3 버킷의 전역 고유 이름에 사용합니다.
+    candidate_number = "00002"
 
     # null이면 현재 AWS SDK 기본 자격 증명 체인을 사용합니다.
     aws_profile = null
@@ -25,22 +28,23 @@ config = {
     analytics = {
       availability_zones = ["ap-northeast-2a", "ap-northeast-2b"]
 
-      # 문서용 CIDR입니다. 실제 plan 전 접속이 필요한 최소 공인 IP /32로 제한합니다.
-      allowed_cidr = "203.0.113.10/32"
-    }
+      # 기존 예시(비활성): alb_ingress_cidrs = ["203.0.113.10/32"]
+      # CloudShell 채점을 위해 기본 적용. 공식 정정 시 이 한 줄만 변경합니다.
+      alb_ingress_cidrs = ["0.0.0.0/0"]
 
-    cloud_event = {
-      availability_zones = ["eu-west-1a", "eu-west-1b"]
+      # 문제지 원문(비활성): flink_runtime_environment = "Apache Flink 1.19"
+      # Studio resource에는 AWS runtime 식별자가 필요하며 채점표는 아래 값을 검사합니다.
+      flink_runtime_environment = "ZEPPELIN-FLINK-3_0"
     }
 
     msk = {
-      # 과제 루트 assets로 통합된 공식 바이너리 경로입니다.
+      # task2/msk에서 실행할 때 과제 루트 assets의 공식 바이너리를 가리킵니다.
       producer_binary_path = "../assets/msk/app"
       availability_zones   = ["ap-northeast-1a", "ap-northeast-1d"]
       lambda_runtime       = "python3.14"
     }
   }
 
-  # 네 서비스는 독립적이므로 전달할 선행 module output이 없습니다.
+  # 세 서비스는 독립적이므로 전달할 선행 module output이 없습니다.
   outputs = {}
 }

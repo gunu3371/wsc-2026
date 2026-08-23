@@ -14,6 +14,19 @@ data "archive_file" "alert_consumer" {
   }
   output_path = "${path.module}/alert-consumer.zip"
 }
+resource "aws_lambda_layer_version" "kafka_python" {
+  filename            = local.kafka_layer_path
+  layer_name          = "wsc2026-msk-kafka-python"
+  compatible_runtimes = [local.input.lambda_runtime]
+  source_code_hash    = try(filebase64sha256(local.kafka_layer_path), null)
+
+  lifecycle {
+    precondition {
+      condition     = fileexists(local.kafka_layer_path)
+      error_message = "Run ../scripts/build-msk-lambda-layer.ps1 from task2 before planning the MSK module."
+    }
+  }
+}
 resource "aws_iam_role" "lambda" {
   name = "wsc2026-msk-lambda-role"
   assume_role_policy = jsonencode({
@@ -32,7 +45,9 @@ resource "aws_iam_role_policy" "lambda" {
       }, {
       Effect = "Allow", Action = ["kafka-cluster:Connect", "kafka-cluster:DescribeGroup", "kafka-cluster:AlterGroup"], Resource = [aws_msk_cluster.this.arn, "arn:aws:kafka:ap-northeast-1:${data.aws_caller_identity.current.account_id}:group/wsc2026-msk-cluster/*/*"]
       }, {
-      Effect = "Allow", Action = ["kafka-cluster:DescribeTopic", "kafka-cluster:ReadData"], Resource = "arn:aws:kafka:ap-northeast-1:${data.aws_caller_identity.current.account_id}:topic/wsc2026-msk-cluster/*/*"
+      Effect = "Allow", Action = ["kafka-cluster:DescribeTopic", "kafka-cluster:ReadData"], Resource = [aws_msk_topic.raw.arn, aws_msk_topic.alert.arn]
+      }, {
+      Effect = "Allow", Action = "kafka-cluster:WriteData", Resource = aws_msk_topic.alert.arn
       }, {
       Effect = "Allow", Action = ["ec2:CreateNetworkInterface", "ec2:DescribeNetworkInterfaces", "ec2:DescribeVpcs", "ec2:DescribeSubnets", "ec2:DescribeSecurityGroups", "ec2:DeleteNetworkInterface"], Resource = "*"
       }, {
@@ -54,13 +69,14 @@ resource "aws_lambda_function" "consumer" {
   filename         = data.archive_file.consumer.output_path
   source_code_hash = data.archive_file.consumer.output_base64sha256
   timeout          = 60
+  layers           = [aws_lambda_layer_version.kafka_python.arn]
   vpc_config {
     subnet_ids         = aws_subnet.private[*].id
     security_group_ids = [aws_security_group.clients.id]
   }
   environment {
     variables = {
-      DDB_TABLE = aws_dynamodb_table.data.name, ALERT_TOPIC = "wsc2026-sensor-alert", BOOTSTRAP_SERVER = aws_msk_cluster.this.bootstrap_brokers_sasl_iam, SNS_TOPIC_ARN = aws_sns_topic.alert.arn, S3_BUCKET = aws_s3_bucket.alert.id
+      DDB_TABLE = aws_dynamodb_table.data.name, ALERT_TOPIC = aws_msk_topic.alert.name, BOOTSTRAP_SERVER = aws_msk_cluster.this.bootstrap_brokers_sasl_iam
     }
   }
 }
@@ -85,7 +101,7 @@ resource "aws_lambda_function" "alert" {
 resource "aws_lambda_event_source_mapping" "raw" {
   event_source_arn  = aws_msk_cluster.this.arn
   function_name     = aws_lambda_function.consumer.arn
-  topics            = ["wsc2026-sensor-raw"]
+  topics            = [aws_msk_topic.raw.name]
   starting_position = "LATEST"
   batch_size        = 100
   enabled           = true
@@ -93,7 +109,7 @@ resource "aws_lambda_event_source_mapping" "raw" {
 resource "aws_lambda_event_source_mapping" "alert" {
   event_source_arn  = aws_msk_cluster.this.arn
   function_name     = aws_lambda_function.alert.arn
-  topics            = ["wsc2026-sensor-alert"]
+  topics            = [aws_msk_topic.alert.name]
   starting_position = "LATEST"
   batch_size        = 100
   enabled           = true

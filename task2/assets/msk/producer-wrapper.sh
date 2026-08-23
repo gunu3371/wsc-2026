@@ -2,13 +2,12 @@
 set -euo pipefail
 
 raw_fifo=/run/wsc2026-sensor-raw.fifo
-alert_fifo=/run/wsc2026-sensor-alert.fifo
-rm -f "$raw_fifo" "$alert_fifo"
-mkfifo "$raw_fifo" "$alert_fifo"
+rm -f "$raw_fifo"
+mkfifo "$raw_fifo"
 
 cleanup() {
-  rm -f "$raw_fifo" "$alert_fifo"
-  for pid in "${raw_pid:-}" "${alert_pid:-}"; do
+  rm -f "$raw_fifo"
+  for pid in "${raw_pid:-}"; do
     if [[ -n "$pid" ]]; then
       kill "$pid" 2>/dev/null || true
     fi
@@ -22,14 +21,7 @@ trap cleanup EXIT
   --topic "$TOPIC_RAW" <"$raw_fifo" &
 raw_pid=$!
 
-/opt/kafka/bin/kafka-console-producer.sh \
-  --bootstrap-server "$BOOTSTRAP_SERVERS" \
-  --producer.config /opt/kafka/client.properties \
-  --topic "$TOPIC_ALERT" <"$alert_fifo" &
-alert_pid=$!
-
 exec 3>"$raw_fifo"
-exec 4>"$alert_fifo"
 
 /opt/wsc2026-sensor-producer 2>&1 | while IFS= read -r line; do
   printf '%s\n' "$line"
@@ -46,14 +38,5 @@ exec 4>"$alert_fifo"
     printf '{"sensorId":"%s","timestamp":"%s","temperature":%s,"humidity":%s,"location":"%s"}\n' \
       "$sensor" "$timestamp" "$temperature" "$humidity" "$location" >&3
 
-    reason=""
-    awk "BEGIN { exit !($temperature > 80) }" && reason="Temperature exceeded threshold: ${temperature}C"
-    awk "BEGIN { exit !($temperature < 10) }" && reason="Temperature below threshold: ${temperature}C"
-    awk "BEGIN { exit !($humidity > 90) }" && reason="Humidity exceeded threshold: ${humidity}%"
-    awk "BEGIN { exit !($humidity < 20) }" && reason="Humidity below threshold: ${humidity}%"
-    if [[ -n "$reason" ]]; then
-      printf '{"sensorId":"%s","timestamp":"%s","temperature":%s,"humidity":%s,"location":"%s","status":"ALERT","alert_reason":"%s"}\n' \
-        "$sensor" "$timestamp" "$temperature" "$humidity" "$location" "$reason" >&4
-    fi
   fi
 done

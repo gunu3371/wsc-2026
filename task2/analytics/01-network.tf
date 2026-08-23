@@ -77,10 +77,12 @@ resource "aws_security_group" "alb" {
   name   = "wsc2026-analytics-alb-sg"
   vpc_id = aws_vpc.this.id
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [local.input.allowed_cidr]
+    from_port = 80
+    to_port   = 80
+    protocol  = "tcp"
+    # 기존 예시(비활성): cidr_blocks = ["203.0.113.10/32"]
+    # 정정 적용: CloudShell의 변동 주소에서도 ALB 채점 요청을 허용
+    cidr_blocks = local.input.alb_ingress_cidrs
   }
   egress {
     from_port   = 0

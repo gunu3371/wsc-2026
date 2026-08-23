@@ -18,7 +18,7 @@ resource "aws_iam_role_policy" "producer" {
     Version = "2012-10-17", Statement = [{
       Effect = "Allow", Action = ["kafka-cluster:Connect", "kafka-cluster:DescribeCluster"], Resource = aws_msk_cluster.this.arn
       }, {
-      Effect = "Allow", Action = ["kafka-cluster:CreateTopic", "kafka-cluster:DescribeTopic", "kafka-cluster:WriteData"], Resource = "arn:aws:kafka:ap-northeast-1:${data.aws_caller_identity.current.account_id}:topic/wsc2026-msk-cluster/*/*"
+      Effect = "Allow", Action = ["kafka-cluster:DescribeTopic", "kafka-cluster:WriteData"], Resource = aws_msk_topic.raw.arn
       }, {
       Effect = "Allow", Action = "s3:GetObject", Resource = aws_s3_object.producer.arn
     }]
@@ -43,5 +43,5 @@ resource "aws_instance" "producer" {
   tags = {
     Name = "wsc2026-sensor-producer"
   }
-  depends_on = [aws_s3_object.producer]
+  depends_on = [aws_s3_object.producer, aws_msk_topic.raw]
 }

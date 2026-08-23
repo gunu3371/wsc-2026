@@ -96,11 +96,11 @@ $RECYCLE.BIN/
 /task1/00003/extensions/grading-bastion/addons.zip
 /task1/00003/platform/book_get.zip
 /task1/00007/addons/lambda.zip
-/task2/00002/cloud-event/remediation.zip
-/task2/00002/msk/alert-consumer.zip
-/task2/00002/msk/consumer.zip
-/task2/00002/workflow/processor.zip
-/task2/00002/workflow/trigger.zip
+/task2/workflow/processor.zip
+/task2/workflow/trigger.zip
+/task2/msk/alert-consumer.zip
+/task2/msk/consumer.zip
+/task2/msk/.build/
 /task2/00007/nosql/audit.zip
 /task2/00008/cloud-event/remediation.zip
 

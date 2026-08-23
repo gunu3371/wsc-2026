@@ -39,3 +39,17 @@ resource "aws_msk_cluster" "this" {
   }
 }
 
+resource "aws_msk_topic" "raw" {
+  cluster_arn        = aws_msk_cluster.this.arn
+  name               = "wsc2026-sensor-raw"
+  partition_count    = 3
+  replication_factor = 2
+}
+
+resource "aws_msk_topic" "alert" {
+  cluster_arn        = aws_msk_cluster.this.arn
+  name               = "wsc2026-sensor-alert"
+  partition_count    = 1
+  replication_factor = 2
+}
+
