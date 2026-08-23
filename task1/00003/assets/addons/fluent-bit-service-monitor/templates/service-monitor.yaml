@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: wsc2026-fluent-bit-metrics
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: wsc2026-prometheus
+spec:
+  selector:
+    matchLabels:
+      wsc2026/metrics: fluent-bit
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s

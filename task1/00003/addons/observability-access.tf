@@ -182,29 +182,14 @@ resource "kubernetes_service_v1" "fluent_bit_metrics" {
   }
 }
 
-resource "kubernetes_manifest" "fluent_bit_service_monitor" {
-  manifest = {
-    apiVersion = "monitoring.coreos.com/v1"
-    kind       = "ServiceMonitor"
-    metadata = {
-      name      = "wsc2026-fluent-bit-metrics"
-      namespace = kubernetes_namespace_v1.observability.metadata[0].name
-      labels = {
-        release = "wsc2026-prometheus"
-      }
-    }
-    spec = {
-      selector = {
-        matchLabels = {
-          "wsc2026/metrics" = "fluent-bit"
-        }
-      }
-      endpoints = [{
-        port     = "metrics"
-        path     = "/metrics"
-        interval = "15s"
-      }]
-    }
-  }
-  depends_on = [kubernetes_service_v1.fluent_bit_metrics]
+resource "helm_release" "fluent_bit_service_monitor" {
+  name      = "wsc2026-fluent-bit-service-monitor"
+  namespace = kubernetes_namespace_v1.observability.metadata[0].name
+  chart     = "${path.module}/../assets/addons/fluent-bit-service-monitor"
+  wait      = true
+
+  depends_on = [
+    helm_release.prometheus,
+    kubernetes_service_v1.fluent_bit_metrics,
+  ]
 }

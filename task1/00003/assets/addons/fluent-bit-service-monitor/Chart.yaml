@@ -1,0 +1,6 @@
+apiVersion: v2
+name: wsc2026-fluent-bit-service-monitor
+description: Fluent Bit metrics ServiceMonitor for the 00003 observability stack
+type: application
+version: 0.1.0
+appVersion: "1.0"

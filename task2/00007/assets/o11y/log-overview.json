@@ -1,1 +1,0 @@
-{"title":"Log Overview","uid":"log-overview","schemaVersion":39,"panels":[{"type":"logs","title":"Application Logs","gridPos":{"x":0,"y":0,"w":24,"h":16},"targets":[{"expr":"{k8s_namespace_name=\"o11y\"}"}]}]}

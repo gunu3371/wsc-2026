@@ -14,6 +14,15 @@ resource "helm_release" "prometheus" {
   timeout    = 1200
   values = [yamlencode({
 
+    additionalPrometheusRulesMap = {
+      wsc2026-alerts = {
+        additionalLabels = {
+          release = "wsc2026-prometheus"
+        }
+        groups = yamldecode(file("${path.module}/../assets/addons/alerts.yaml")).spec.groups
+      }
+    }
+
     prometheus = {
       prometheusSpec = {
         retention = "7d", nodeSelector = {
@@ -132,11 +141,5 @@ resource "kubernetes_config_map_v1" "dashboard" {
       region     = local.input.region
     })
   }
-
-}
-
-resource "kubernetes_manifest" "alerts" {
-  manifest   = yamldecode(file("${path.module}/../assets/addons/alerts.yaml"))
-  depends_on = [helm_release.prometheus]
 
 }
