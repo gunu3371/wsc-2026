@@ -39,6 +39,9 @@ def get_producer():
             sasl_mechanism="OAUTHBEARER",
             sasl_oauth_token_provider=MSKTokenProvider(),
             client_id=socket.gethostname(),
+            # 기존 설정(비활성): kafka-python 3.0 기본 idempotence 사용
+            # alert 토픽으로 제한한 WriteData 최소권한과 맞춘다.
+            enable_idempotence=False,
             value_serializer=lambda value: json.dumps(value).encode("utf-8"),
         )
     return _producer

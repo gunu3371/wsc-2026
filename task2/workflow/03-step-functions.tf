@@ -12,7 +12,15 @@ resource "aws_iam_role_policy" "sfn" {
   role = aws_iam_role.sfn.id
   policy = jsonencode({
     Version = "2012-10-17", Statement = [{
-      Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], Resource = "${aws_s3_bucket.this.arn}/*"
+      # 기존 구현(비활성): Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+      # Terraform default_tags가 붙은 CSV를 CopyObject로 이동할 때 객체 태그 권한도 필요하다.
+      Effect = "Allow", Action = [
+        "s3:GetObject",
+        "s3:GetObjectTagging",
+        "s3:PutObject",
+        "s3:PutObjectTagging",
+        "s3:DeleteObject"
+      ], Resource = "${aws_s3_bucket.this.arn}/*"
       }, {
       Effect = "Allow", Action = "lambda:InvokeFunction", Resource = aws_lambda_function.processor.arn
     }]

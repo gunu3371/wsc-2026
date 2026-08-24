@@ -32,8 +32,16 @@ resource "aws_glue_catalog_database" "default" {
   name = "default"
 }
 
+# IAM inline policy는 API에서 조회 가능해진 직후에도 서비스 측 전파가 끝나지 않을 수 있다.
+# Studio 생성 요청 전에 기다려 glue:GetDatabase 권한 오인 실패를 방지한다.
+resource "time_sleep" "flink_iam_propagation" {
+  depends_on      = [aws_iam_role_policy.flink, aws_glue_catalog_database.default]
+  create_duration = "30s"
+}
+
 resource "awscc_kinesisanalyticsv2_application" "flink" {
-  depends_on = [aws_iam_role_policy.flink, aws_glue_catalog_database.default]
+  # 기존 구현(비활성): depends_on = [aws_iam_role_policy.flink, aws_glue_catalog_database.default]
+  depends_on = [time_sleep.flink_iam_propagation]
 
   application_name = "wsc2026-analytics-flink"
   # 문제지 원문(비활성): Runtime = "Apache Flink 1.19"

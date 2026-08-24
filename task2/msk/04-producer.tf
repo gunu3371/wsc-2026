@@ -16,6 +16,8 @@ resource "aws_iam_role_policy" "producer" {
   role = aws_iam_role.producer.id
   policy = jsonencode({
     Version = "2012-10-17", Statement = [{
+      # 확장 권한 방식(비활성): "kafka-cluster:WriteDataIdempotently"
+      # raw 토픽 최소권한을 유지하고 client에서 idempotence를 비활성화한다.
       Effect = "Allow", Action = ["kafka-cluster:Connect", "kafka-cluster:DescribeCluster"], Resource = aws_msk_cluster.this.arn
       }, {
       Effect = "Allow", Action = ["kafka-cluster:DescribeTopic", "kafka-cluster:WriteData"], Resource = aws_msk_topic.raw.arn
@@ -24,6 +26,13 @@ resource "aws_iam_role_policy" "producer" {
     }]
   })
 }
+
+# EC2에서 producer를 시작하기 전에 MSK IAM 권한 전파를 기다린다.
+resource "time_sleep" "producer_iam_propagation" {
+  depends_on      = [aws_iam_role_policy.producer]
+  create_duration = "30s"
+}
+
 resource "aws_iam_instance_profile" "producer" {
   name = "wsc2026-sensor-producer-profile"
   role = aws_iam_role.producer.name
@@ -43,5 +52,6 @@ resource "aws_instance" "producer" {
   tags = {
     Name = "wsc2026-sensor-producer"
   }
-  depends_on = [aws_s3_object.producer, aws_msk_topic.raw]
+  # 기존 구현(비활성): depends_on = [aws_s3_object.producer, aws_msk_topic.raw]
+  depends_on = [aws_s3_object.producer, aws_msk_topic.raw, time_sleep.producer_iam_propagation]
 }

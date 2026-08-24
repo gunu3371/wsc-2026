@@ -61,7 +61,18 @@ resource "aws_iam_role_policy" "lambda" {
     }]
   })
 }
+
+# VPC Lambda 생성 시 AWS가 execution role의 ENI 권한을 즉시 재확인한다.
+# inline policy가 IAM 전체에 전파된 뒤 함수를 생성해 CreateNetworkInterface 오류를 방지한다.
+resource "time_sleep" "lambda_iam_propagation" {
+  depends_on      = [aws_iam_role_policy.lambda]
+  create_duration = "30s"
+}
+
 resource "aws_lambda_function" "consumer" {
+  # 기존 구현(비활성): role 참조만으로 생성 순서를 결정
+  depends_on = [time_sleep.lambda_iam_propagation]
+
   function_name    = "wsc2026-sensor-consumer"
   role             = aws_iam_role.lambda.arn
   runtime          = local.input.lambda_runtime
@@ -81,6 +92,9 @@ resource "aws_lambda_function" "consumer" {
   }
 }
 resource "aws_lambda_function" "alert" {
+  # 기존 구현(비활성): role 참조만으로 생성 순서를 결정
+  depends_on = [time_sleep.lambda_iam_propagation]
+
   function_name    = "wsc2026-sensor-alert-consumer"
   role             = aws_iam_role.lambda.arn
   runtime          = local.input.lambda_runtime

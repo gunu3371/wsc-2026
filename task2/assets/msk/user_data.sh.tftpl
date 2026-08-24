@@ -7,7 +7,9 @@ mkdir -p /opt/kafka
 wget -qO /tmp/kafka.tgz https://archive.apache.org/dist/kafka/3.6.0/kafka_2.13-3.6.0.tgz
 tar xzf /tmp/kafka.tgz --strip-components=1 -C /opt/kafka
 wget -qO /opt/kafka/libs/aws-msk-iam-auth.jar https://github.com/aws/aws-msk-iam-auth/releases/download/v2.2.0/aws-msk-iam-auth-2.2.0-all.jar
-printf '%s\n' 'security.protocol=SASL_SSL' 'sasl.mechanism=AWS_MSK_IAM' 'sasl.jaas.config=software.amazon.msk.auth.iam.IAMLoginModule required;' 'sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbackHandler' >/opt/kafka/client.properties
+# 기존 설정(비활성): enable.idempotence 미지정(Kafka 3.6 기본값 true)
+# raw 토픽 하나에만 WriteData를 허용하는 최소권한 정책과 맞추기 위해 false로 고정한다.
+printf '%s\n' 'security.protocol=SASL_SSL' 'sasl.mechanism=AWS_MSK_IAM' 'sasl.jaas.config=software.amazon.msk.auth.iam.IAMLoginModule required;' 'sasl.client.callback.handler.class=software.amazon.msk.auth.iam.IAMClientCallbackHandler' 'enable.idempotence=false' >/opt/kafka/client.properties
 printf '%s' '${wrapper_base64}' | base64 -d >/usr/local/bin/wsc2026-sensor-producer
 chmod +x /usr/local/bin/wsc2026-sensor-producer
 cat >/etc/systemd/system/sensor-producer.service <<'UNIT'
