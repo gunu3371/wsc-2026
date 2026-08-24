@@ -55,11 +55,29 @@ resource "kubernetes_deployment_v1" "application" {
       metadata { labels = { app = each.key } }
       spec {
         service_account_name = each.key == "product" ? kubernetes_service_account_v1.product.metadata[0].name : "default"
+        node_selector        = { workload = each.key == "stress" ? "stress" : "core" }
+
+        dynamic "toleration" {
+          for_each = each.key == "stress" ? [1] : []
+          content {
+            key      = "dedicated"
+            operator = "Equal"
+            value    = "stress"
+            effect   = "NoSchedule"
+          }
+        }
 
         topology_spread_constraint {
           max_skew           = 1
           topology_key       = "topology.kubernetes.io/zone"
           when_unsatisfiable = "ScheduleAnyway"
+          label_selector { match_labels = { app = each.key } }
+        }
+
+        topology_spread_constraint {
+          max_skew           = 1
+          topology_key       = "kubernetes.io/hostname"
+          when_unsatisfiable = each.key == "stress" ? "ScheduleAnyway" : "DoNotSchedule"
           label_selector { match_labels = { app = each.key } }
         }
 

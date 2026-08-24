@@ -9,6 +9,9 @@ output "cluster_certificate_authority_data" {
   sensitive = true
 }
 output "node_role_name" { value = aws_iam_role.eks_node.name }
+output "node_role_arn" { value = aws_iam_role.eks_node.arn }
+output "core_node_group_name" { value = aws_eks_node_group.core.node_group_name }
+output "stress_node_group_name" { value = aws_eks_node_group.stress.node_group_name }
 
 output "database_secret_arn" { value = aws_secretsmanager_secret.db.arn }
 output "database_endpoint" { value = aws_db_instance.main.endpoint }

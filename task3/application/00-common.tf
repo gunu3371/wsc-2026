@@ -42,4 +42,7 @@ locals {
     product = 8080
     stress  = 8080
   }
+
+  alb_name       = substr("${local.input.project_name}-${local.input.candidate_id}-alb", 0, 32)
+  alb_group_name = substr("${local.input.project_name}-${local.input.candidate_id}-api", 0, 63)
 }

@@ -19,19 +19,60 @@ resource "aws_eks_cluster" "main" {
   depends_on = [aws_iam_role_policy_attachment.eks_cluster]
 }
 
-resource "aws_eks_node_group" "main" {
+resource "aws_eks_node_group" "core" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${local.input.project_name}-workers"
   node_role_arn   = aws_iam_role.eks_node.arn
   subnet_ids      = aws_subnet.private[*].id
-  instance_types  = ["t3.medium"]
-  capacity_type   = "ON_DEMAND"
-  disk_size       = 30
+  instance_types  = local.input.node_groups.core.instance_types
+  capacity_type   = local.input.node_groups.core.capacity_type
+  disk_size       = local.input.node_groups.core.disk_size
 
   scaling_config {
-    desired_size = 2
-    min_size     = 2
-    max_size     = 6
+    desired_size = local.input.node_groups.core.desired_size
+    min_size     = local.input.node_groups.core.min_size
+    max_size     = local.input.node_groups.core.max_size
+  }
+
+  labels = { workload = "core" }
+
+  update_config {
+    max_unavailable = 1
+  }
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_node_worker,
+    aws_iam_role_policy_attachment.eks_node_ecr,
+    aws_iam_role_policy_attachment.eks_node_cni,
+  ]
+}
+
+moved {
+  from = aws_eks_node_group.main
+  to   = aws_eks_node_group.core
+}
+
+resource "aws_eks_node_group" "stress" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = "${local.input.project_name}-stress"
+  node_role_arn   = aws_iam_role.eks_node.arn
+  subnet_ids      = aws_subnet.private[*].id
+  instance_types  = local.input.node_groups.stress.instance_types
+  capacity_type   = local.input.node_groups.stress.capacity_type
+  disk_size       = local.input.node_groups.stress.disk_size
+
+  scaling_config {
+    desired_size = local.input.node_groups.stress.desired_size
+    min_size     = local.input.node_groups.stress.min_size
+    max_size     = local.input.node_groups.stress.max_size
+  }
+
+  labels = { workload = "stress" }
+
+  taint {
+    key    = "dedicated"
+    value  = "stress"
+    effect = "NO_SCHEDULE"
   }
 
   update_config {
@@ -52,7 +93,7 @@ resource "aws_eks_addon" "pod_identity_agent" {
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "PRESERVE"
 
-  depends_on = [aws_eks_node_group.main]
+  depends_on = [aws_eks_node_group.core, aws_eks_node_group.stress]
 }
 
 resource "aws_eks_access_entry" "additional_admin" {

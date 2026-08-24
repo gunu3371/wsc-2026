@@ -6,14 +6,18 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.13"
-    }
     kubernetes = {
       source  = "hashicorp/kubernetes"
       version = "~> 2.30"
     }
+  }
+}
+
+provider "aws" {
+  region = local.input.aws_region
+
+  default_tags {
+    tags = local.common_tags
   }
 }
 
@@ -24,24 +28,4 @@ provider "kubernetes" {
   host                   = data.aws_eks_cluster.main.endpoint
   cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.main.token
-}
-
-provider "helm" {
-  kubernetes {
-    host                   = data.aws_eks_cluster.main.endpoint
-    cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
-    token                  = data.aws_eks_cluster_auth.main.token
-  }
-}
-
-provider "aws" {
-  region = local.input.aws_region
-  default_tags {
-    tags = {
-      Project     = local.input.project_name
-      CandidateId = local.input.candidate_id
-      Task        = "3"
-      ManagedBy   = "Terraform"
-    }
-  }
 }

@@ -69,7 +69,7 @@
 | `task1/00003` | `platform`, `extensions/image-build`, `addons`, `delivery`, 선택적 `extensions/grading-bastion` |
 | `task1/00007` | `foundation`, `extensions/image-build`, `cluster`, `addons` |
 | `task2` (과제번호 `00002`) | 독립 서비스 `workflow`, `analytics`, `msk` |
-| `task3` | `foundation`, `application`, `extensions/monitoring` |
+| `task3` | `foundation`, `extensions/additional-infrastructure`, `extensions/image-build`, `application`, `extensions/additional-application`, `extensions/monitoring` |
 
 `task1`은 과제번호 하위 디렉터리를 사용한다. `task2`는 과제번호 `00002`만 남아 `task2/` 자체가 과제 루트이며, 제외된 `00007` 구현은 유지하지 않는다. `task3`도 현재 단일 공통 과제이므로 `task3/` 자체가 과제 루트다. 새 공식 과제가 구조를 변경하면 기존 예시를 억지로 적용하지 않는다.
 
@@ -165,7 +165,7 @@ PowerShell에서는 `-var-file=...` 전체를 큰따옴표로 감싼다. PowerSh
 
 ## 6. 로컬 Terraform 검증
 
-각 root module을 README의 의존 순서로 검증한다. `foundation → application → extensions`는 해당 구조를 쓰는 과제의 기본 순서일 뿐이다. `task1/00003`은 `platform → extensions/image-build → addons → delivery`, `task1/00007`은 `foundation → extensions/image-build → cluster → addons` 순서이며, 서로 독립인 `task2` 서비스는 각각 별도 검증한다.
+각 root module을 README의 의존 순서로 검증한다. `foundation → application → extensions`는 해당 구조를 쓰는 과제의 기본 순서일 뿐이다. `task1/00003`은 `platform → extensions/image-build → addons → delivery`, `task1/00007`은 `foundation → extensions/image-build → cluster → addons`, `task3`은 `foundation → extensions/additional-infrastructure → extensions/image-build → application → extensions/additional-application → extensions/monitoring` 순서이며, 서로 독립인 `task2` 서비스는 각각 별도 검증한다.
 
 ```powershell
 terraform -chdir=foundation fmt -check
